@@ -4,22 +4,42 @@ import { FaMusic } from 'react-icons/fa';
 
 export default async function PianoLessons() {
   let data;
+  let pricing;
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/piano/availability`);
-    data = await res.json();
+    const [availabilityRes, pricingRes] = await Promise.all([
+      fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/piano/availability`),
+      fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/piano/pricing`)
+    ]);
+    data = await availabilityRes.json();
+    pricing = pricingRes.ok ? await pricingRes.json() : null;
   } catch (error) {
-    console.error('Error checking availability:', error);
+    console.error('Error fetching data:', error);
     return (
       <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center bg-background">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-foreground mb-4">Error</h1>
           <p className="text-lg text-foreground/80">
-            Unable to check availability. Please try again later.
+            Unable to load page data. Please try again later.
           </p>
         </div>
       </div>
     );
   }
+
+  // Calculate pricing for different lesson lengths
+  const calculatePricing = () => {
+    if (!pricing?.pricing?.[0]?.price) return null;
+    
+    const ratePerMinute = pricing.pricing[0].price;
+    const lessonLengths = [20, 30, 45];
+    
+    return lessonLengths.map(length => ({
+      length,
+      cost: (Math.round(ratePerMinute * length)).toFixed(2)
+    }));
+  };
+
+  const lessonPricing = calculatePricing();
 
   if (!data.available) {
     if (data.waitingListAvailable) {
@@ -41,6 +61,20 @@ export default async function PianoLessons() {
                 </div>
                 <p className="text-blue-700">Join our waiting list to be notified when spots become available!</p>
               </div>
+
+              {lessonPricing && (
+                <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6 mb-8 max-w-2xl mx-auto">
+                  <h3 className="text-xl font-semibold text-foreground mb-4 text-center">Lesson Pricing</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {lessonPricing.map(({ length, cost }) => (
+                      <div key={length} className="text-center">
+                        <div className="text-2xl font-bold text-green-600">${cost}</div>
+                        <div className="text-sm text-foreground/70">{length} minutes</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <SignupForm buttonText="Join Waiting List" mode="waitingList" />
             </div>
@@ -85,6 +119,20 @@ export default async function PianoLessons() {
           <p className="text-lg text-foreground/80 leading-relaxed mb-8">
             Thank you for your interest in piano lessons. It is a privilege to share the joy of music with students of all ages and abilities. Please complete the form below, and I will be in touch shortly to discuss how we can begin your musical journey together.
           </p>
+
+          {lessonPricing && (
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6 mb-8 max-w-2xl mx-auto">
+              <h3 className="text-xl font-semibold text-foreground mb-4 text-center">Lesson Pricing</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {lessonPricing.map(({ length, cost }) => (
+                  <div key={length} className="text-center">
+                    <div className="text-2xl font-bold text-green-600">${cost}</div>
+                    <div className="text-sm text-foreground/70">{length} minutes</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {data.spotsAvailable <= 10 && (
             <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4 mb-8 max-w-2xl mx-auto">

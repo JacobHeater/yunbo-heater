@@ -153,9 +153,12 @@ export class GoogleSheets {
           } else {
             switch (column.dataType) {
               case "number":
-              case "currency":
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 (obj as any)[prop] = value ? parseFloat(value) : 0;
+                break;
+              case "currency":
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (obj as any)[prop] = value ? parseFloat(value.replace(/[$,]/g, '')) : null;
                 break;
               case "Date":
               case "TimeSpan":
