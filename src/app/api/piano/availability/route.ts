@@ -1,34 +1,34 @@
-export async function GET() {
-  const availability = {
-    message: "Yunbo Heater Piano Lesson Availability",
-    slots: [
-      {
-        date: "2026-01-26",
-        time: "10:00 AM",
-        available: true,
-        duration: "60 minutes"
-      },
-      {
-        date: "2026-01-26",
-        time: "2:00 PM",
-        available: false,
-        duration: "60 minutes"
-      },
-      {
-        date: "2026-01-27",
-        time: "11:00 AM",
-        available: true,
-        duration: "30 minutes"
-      },
-      {
-        date: "2026-01-27",
-        time: "3:00 PM",
-        available: true,
-        duration: "60 minutes"
-      }
-    ],
-    note: "Please contact via email to schedule a lesson."
-  };
+import { StatusCode } from "@/status/status-codes";
+import { GoogleSheets } from "../../../../lib/google-sheets";
 
-  return Response.json(availability);
+export async function GET() {
+  try {
+    const wrapper = new GoogleSheets();
+    const students = await wrapper.getStudentRoll();
+    const waitingList = await wrapper.getWaitingList();
+    const config = await wrapper.getConfiguration();
+
+    const spotsAvailable = Math.max(0, config.maxStudents - students.length);
+    const waitingListSpotsAvailable = Math.max(0, config.maxWaitingListSize - waitingList.length);
+
+    if (students.length >= config.maxStudents) {
+      return Response.json({ 
+        available: false,
+        waitingListAvailable: waitingListSpotsAvailable > 0,
+        waitingListSpotsAvailable
+      });
+    }
+    return Response.json({
+      available: true,
+      spotsAvailable,
+      waitingListAvailable: waitingListSpotsAvailable > 0,
+      waitingListSpotsAvailable,
+    });
+  } catch (error) {
+    console.error("Error fetching from Google Sheets:", error);
+    return Response.json(
+      { error: "Failed to fetch student roll" },
+      { status: StatusCode.InternalServerError },
+    );
+  }
 }
