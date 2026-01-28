@@ -98,7 +98,13 @@ export function validateStartDate(startDate: string): ValidationResult {
     return { isValid: false, message: 'Preferred start date is required.' };
   }
 
-  const selectedDate = new Date(startDate);
+  let selectedDate: Date;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
+    const parts = startDate.split('-').map((p) => parseInt(p, 10));
+    selectedDate = new Date(parts[0], parts[1] - 1, parts[2]);
+  } else {
+    selectedDate = new Date(startDate);
+  }
   const today = new Date();
   today.setHours(0, 0, 0, 0); // Reset time to start of day for fair comparison
 
@@ -119,7 +125,7 @@ export function validateStudentData(data: {
   duration: string;
   skillLevel: string;
   startDate: string;
-}): ValidationResult {
+}, allowPastDates: boolean = false): ValidationResult {
   // Validate required fields
   const nameValidation = validateRequired(data.studentName, 'Student name');
   if (!nameValidation.isValid) return nameValidation;
@@ -145,8 +151,10 @@ export function validateStudentData(data: {
   const skillLevelValidation = validateRequired(data.skillLevel, 'Skill level');
   if (!skillLevelValidation.isValid) return skillLevelValidation;
 
-  const startDateValidation = validateStartDate(data.startDate);
-  if (!startDateValidation.isValid) return startDateValidation;
+  if (!allowPastDates) {
+    const startDateValidation = validateStartDate(data.startDate);
+    if (!startDateValidation.isValid) return startDateValidation;
+  }
 
   return { isValid: true };
 }

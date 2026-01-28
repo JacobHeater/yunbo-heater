@@ -102,6 +102,17 @@ export default function TeacherDashboard() {
                 Add Student <FaChevronRight className="w-4 h-4" />
               </a>
             </div>
+
+            <div className="bg-gradient-to-br from-white to-blue-50 border border-foreground/20 shadow-sm rounded-lg p-6">
+              <h2 className="text-xl font-semibold text-foreground mb-4">Configuration</h2>
+              <p className="text-foreground/70 mb-4">Manage application configuration values</p>
+              <a
+                href="/teacher/admin/configuration"
+                className="inline-flex items-center gap-2 text-foreground hover:text-foreground/80 font-medium"
+              >
+                Manage Configuration <FaChevronRight className="w-4 h-4" />
+              </a>
+            </div>
           </div>
         </div>
       </div>

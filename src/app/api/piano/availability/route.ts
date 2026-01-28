@@ -1,12 +1,35 @@
 import { StatusCode } from "@/status/status-codes";
-import { GoogleSheets } from "../../../../lib/google-sheets";
+import { StudentRollTable } from "../../../../schema/student-roll";
+import { WaitingListTable } from "../../../../schema/waiting-list";
+import { ConfigurationTable } from "../../../../schema/configuration";
 
 export async function GET() {
   try {
-    const wrapper = new GoogleSheets();
-    const students = await wrapper.getStudentRoll();
-    const waitingList = await wrapper.getWaitingList();
-    const config = await wrapper.getConfiguration();
+    const studentRoll = new StudentRollTable();
+    const waitingListTable = new WaitingListTable();
+    const configTable = new ConfigurationTable();
+
+    const students = await studentRoll.readAllAsync();
+    const waitingList = await waitingListTable.readAllAsync();
+    const configRows = await configTable.readAllAsync();
+
+    const config: Record<string, any> = {};
+    configRows.forEach((row) => {
+      const key = row.key;
+      const value = row.value;
+      switch (row.type) {
+        case "number":
+          config[key] = parseInt(value);
+          break;
+        case "decimal":
+          config[key] = parseFloat(value);
+          break;
+        case "string":
+        default:
+          config[key] = value;
+          break;
+      }
+    });
 
     const spotsAvailable = Math.max(0, config.maxStudents - students.length);
     const waitingListSpotsAvailable = Math.max(0, config.maxWaitingListSize - waitingList.length);

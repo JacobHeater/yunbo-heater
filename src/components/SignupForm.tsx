@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { StudentEntryRow } from '../schema/student-entry';
+import { useState, useEffect } from 'react';
+import { StudentEntry } from '../schema/student-entry';
 import Button from './Button';
 import { useToast } from './ToastContext';
-import { validateEmail, validatePhoneNumber, validateAge, validateRequired, validateStudentData } from '../lib/validation';
+import { validateStudentData } from '../lib/validation';
 
 interface SignupFormProps {
     buttonText?: string;
@@ -12,7 +12,7 @@ interface SignupFormProps {
 }
 
 export default function SignupForm({ buttonText = "Sign Up", mode = 'signup' }: SignupFormProps) {
-  const [formData, setFormData] = useState<Omit<StudentEntryRow, 'id' | 'notes'>>({
+  const [formData, setFormData] = useState<Omit<StudentEntry, 'id' | 'notes'>>({
     studentName: '',
     phoneNumber: '',
     emailAddress: '',
@@ -22,16 +22,43 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup' }: 
     duration: '',
     skillLevel: '',
     startDate: '',
+    minutelyRate: '',
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useToast();
 
+  // Fetch default rate for signup, waiting list, and manual modes
+  useEffect(() => {
+    const fetchDefaultRate = async () => {
+      if (mode === 'signup' || mode === 'waitingList' || mode === 'manual') {
+        try {
+          const res = await fetch('/api/piano/pricing');
+          if (res.ok) {
+            const data = await res.json();
+            // Prefer explicit formatted `rate` from the API; fall back to pricing array if present
+            if (data.rate) {
+              setFormData(prev => ({ ...prev, minutelyRate: data.rate }));
+            } else if (data.pricing && data.pricing.length > 0 && data.pricing[0].cost) {
+              // If API returned costs, use the per-minute rate approximation from cost/length
+              const approxRate = (parseFloat(data.pricing[0].cost) / data.pricing[0].length).toFixed(2);
+              setFormData(prev => ({ ...prev, minutelyRate: `$${approxRate}` }));
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching pricing:', error);
+        }
+      }
+    };
+
+    fetchDefaultRate();
+  }, [mode]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Client-side validation using shared validation functions
-    const validation = validateStudentData(formData);
+    const validation = validateStudentData(formData, mode === 'manual');
     if (!validation.isValid) {
       showToast(validation.message!, 'error');
       return;
@@ -63,6 +90,7 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup' }: 
           duration: '',
           skillLevel: '',
           startDate: '',
+          minutelyRate: '',
         });
       } else {
         showToast(data.error || 'There was an error submitting your information. Please try again.', 'error');
@@ -217,6 +245,22 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup' }: 
               className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
+
+          {mode === 'manual' && (
+            <div>
+              <label htmlFor="minutelyRate" className="block text-sm font-medium text-foreground mb-2">
+                Minutely Rate *
+              </label>
+              <input
+                type="text"
+                id="minutelyRate"
+                value={formData.minutelyRate}
+                onChange={(e) => setFormData({ ...formData, minutelyRate: e.target.value })}
+                placeholder="e.g., $50.00"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          )}
         </div>
 
         <div className="text-center pt-8">

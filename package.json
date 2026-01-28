@@ -12,20 +12,21 @@
     "test:headed": "playwright test --headed"
   },
   "dependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
-    "@mui/icons-material": "^7.3.7",
-    "@uiw/react-md-editor": "^4.0.11",
+    "date-fns": "^4.1.0",
     "googleapis": "^170.1.0",
+    "jsonwebtoken": "^9.0.0",
     "next": "16.1.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-icons": "^5.5.0",
+    "react-markdown": "^10.1.0",
+    "react-markdown-editor-lite": "^1.4.2",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.58.0",
     "@tailwindcss/postcss": "^4",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

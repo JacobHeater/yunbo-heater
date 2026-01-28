@@ -1,38 +1,73 @@
-import { Table, ColumnDefinition } from "./table";
+import { GoogleSheetsTableBase, ColumnDefinition } from "./table";
+import { DataType } from './data-types';
 
-export interface AppConfig {
-  maxStudents: number;
-  maxWaitingListSize: number;
-}
-
-export interface ConfigurationRow {
+export interface Configuration {
+  id: string;
   key: string;
   value: string;
   type: string;
 }
 
-export class Configuration implements Table<ConfigurationRow> {
+export class ConfigurationTable extends GoogleSheetsTableBase<Configuration> {
   name: string = "Configuration";
-  columns: ColumnDefinition[] = [
-    {
+  columns: Record<keyof Configuration, ColumnDefinition> = {
+    id: {
+      name: "Id",
+      dataType: DataType.String,
+      nullable: false,
+    },
+    key: {
       name: "Key",
-      dataType: "string",
+      dataType: DataType.String,
       nullable: false,
     },
-    {
+    value: {
       name: "Value",
-      dataType: "string",
+      dataType: DataType.String,
       nullable: false,
     },
-    {
+    type: {
       name: "Type",
-      dataType: "string",
+      dataType: DataType.String,
       nullable: false,
     },
-  ];
-  propertyMap: Record<string, keyof ConfigurationRow> = {
-    Key: "key",
-    Value: "value",
-    Type: "type",
   };
+
+  // Update an existing configuration row by matching the Key column.
+  async updateByKeyAsync(key: string, value: string, type: string): Promise<void> {
+    // Read all rows to find existing and preserve id if present
+    const response = await this.sheets.spreadsheets.values.get({
+      spreadsheetId: this.spreadsheetId,
+      range: this.name,
+    });
+    const rows = response.data.values || [];
+    if (rows.length === 0) throw new Error("No header row found");
+    const header = rows[0];
+    const dataRows = rows.slice(1);
+    const keyColumnName = this.columns.key.name;
+    const keyIndex = header.indexOf(keyColumnName);
+    if (keyIndex === -1) throw new Error(`${keyColumnName} column not found`);
+    const existingRowIndex = dataRows.findIndex((row) => row[keyIndex] === key);
+    if (existingRowIndex === -1) throw new Error(`Configuration key not found: ${key}`);
+
+    // Try to read the existing entry via readAllAsync to pick up the id
+    const existingEntries = await this.readAllAsync();
+    const found = existingEntries.find((r) => r.key === key) as any;
+
+    // Build an entry object respecting columns order, preserving id when possible
+    const entry: any = {};
+    entry.id = found?.id || undefined;
+    entry.key = key;
+    entry.value = value;
+    entry.type = type;
+    const formattedRow = this.formatRowForWrite(entry as Configuration);
+
+    const range = `${this.name}!A${existingRowIndex + 2}:Z${existingRowIndex + 2}`;
+    await this.sheets.spreadsheets.values.update({
+      spreadsheetId: this.spreadsheetId,
+      range,
+      valueInputOption: "RAW",
+      requestBody: { values: [formattedRow] },
+    });
+  }
 }

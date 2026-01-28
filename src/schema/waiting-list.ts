@@ -1,5 +1,5 @@
-import { StudentEntry } from "./student-entry";
+import { StudentEntryTable } from "./student-entry";
 
-export class WaitingList extends StudentEntry {
+export class WaitingListTable extends StudentEntryTable {
   name: string = "Waiting List";
 }

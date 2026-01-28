@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { destroySession } from '@/lib/auth';
+import { destroySession, requireApiAuth } from '@/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireApiAuth(request);
+    if (auth instanceof NextResponse) return auth;
     // Destroy the session
     await destroySession();
 

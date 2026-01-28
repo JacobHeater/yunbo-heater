@@ -1,6 +1,8 @@
-import { Table, ColumnDefinition } from "./table";
+import { WriteFormat, ReadFormat } from "./formatting";
+import { GoogleSheetsTableBase, ColumnDefinition } from "./table";
+import { DataType } from "./data-types";
 
-export interface StudentEntryRow {
+export interface StudentEntry {
   id: string;
   studentName: string;
   phoneNumber: string;
@@ -11,79 +13,96 @@ export interface StudentEntryRow {
   duration: string;
   skillLevel: string;
   startDate: string;
+  minutelyRate: string;
   notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
-export abstract class StudentEntry implements Table<StudentEntryRow> {
+export const studentEntryColumns: Record<keyof StudentEntry, ColumnDefinition> = {
+  id: {
+    name: "Id",
+    dataType: DataType.String,
+    nullable: false,
+  },
+  studentName: {
+    name: "Student Name",
+    dataType: DataType.String,
+    nullable: false,
+  },
+  phoneNumber: {
+    name: "Phone Number",
+    dataType: DataType.String,
+    nullable: false,
+  },
+  emailAddress: {
+    name: "Email Address",
+    dataType: DataType.String,
+    nullable: false,
+  },
+  age: {
+    name: "Age",
+    dataType: DataType.Number,
+    nullable: false,
+  },
+  lessonDay: {
+    name: "Lesson Day",
+    dataType: DataType.String,
+    nullable: false,
+  },
+  lessonTime: {
+    name: "Lesson Time",
+    dataType: DataType.Time,
+    nullable: false,
+    writeFormat: WriteFormat.TIME,
+    readFormat: ReadFormat.TIME
+  },
+  duration: {
+    name: "Duration",
+    dataType: DataType.TimeSpan,
+    nullable: false,
+    writeFormat: WriteFormat.TIME_SPAN,
+    readFormat: ReadFormat.TIME_SPAN
+  },
+  skillLevel: {
+    name: "Skill Level",
+    dataType: DataType.String,
+    nullable: false,
+  },
+  startDate: {
+    name: "Start Date",
+    dataType: DataType.Date,
+    nullable: false,
+    writeFormat: WriteFormat.DATE,
+    readFormat: ReadFormat.DATE
+  },
+  minutelyRate: {
+    name: "Minutely Rate",
+    dataType: DataType.Currency,
+    nullable: false,
+    writeFormat: WriteFormat.CURRENCY,
+    readFormat: ReadFormat.CURRENCY
+  },
+  notes: {
+    name: "Notes",
+    dataType: DataType.String,
+    nullable: true,
+  },
+  createdAt: {
+    name: "Created At",
+    dataType: DataType.DateTime,
+    nullable: true,
+  },
+  updatedAt: {
+    name: "Updated At",
+    dataType: DataType.DateTime,
+    nullable: true,
+  },
+};
+
+
+
+export abstract class StudentEntryTable extends GoogleSheetsTableBase<StudentEntry> {
   abstract name: string;
-  columns: ColumnDefinition[] = [
-    {
-      name: "Id",
-      dataType: "string",
-      nullable: false,
-    },
-    {
-      name: "Student Name",
-      dataType: "string",
-      nullable: false,
-    },
-    {
-      name: "Phone Number",
-      dataType: "string",
-      nullable: false,
-    },
-    {
-      name: "Email Address",
-      dataType: "string",
-      nullable: false,
-    },
-    {
-      name: "Age",
-      dataType: "number",
-      nullable: false,
-    },
-    {
-      name: "Lesson Day",
-      dataType: "string",
-      nullable: false,
-    },
-    {
-      name: "Lesson Time",
-      dataType: "Time",
-      nullable: false,
-    },
-    {
-      name: "Duration",
-      dataType: "TimeSpan",
-      nullable: false,
-    },
-    {
-      name: "Skill Level",
-      dataType: "string",
-      nullable: false,
-    },
-    {
-      name: "Start Date",
-      dataType: "Date",
-      nullable: false,
-    },
-    {
-      name: "Notes",
-      dataType: "string",
-      nullable: true,
-    },
-  ];
-  propertyMap: Record<string, keyof StudentEntryRow> = {
-    Id: "id",
-    "Student Name": "studentName",
-    "Phone Number": "phoneNumber",
-    "Email Address": "emailAddress",
-    Age: "age",
-    "Lesson Day": "lessonDay",
-    "Lesson Time": "lessonTime",
-    Duration: "duration",
-    "Skill Level": "skillLevel",
-    "Start Date": "startDate",
-    Notes: "notes",
-  };
+  columns: Record<keyof StudentEntry, ColumnDefinition> = studentEntryColumns;
 }

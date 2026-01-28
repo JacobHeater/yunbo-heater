@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleSheets } from '@/lib/google-sheets';
-import { getSession } from '@/lib/auth';
+import { SignupsTable } from '@/schema/signups';
+import { requireApiAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireApiAuth(request);
+    if (auth instanceof NextResponse) return auth;
 
-    const sheets = new GoogleSheets();
-    const students = await sheets.getSignups();
+    const signups = new SignupsTable();
+    const students = await signups.readAllAsync();
     return NextResponse.json({ students });
   } catch (error) {
     console.error('Error fetching signups:', error);
@@ -20,14 +18,12 @@ export async function GET(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireApiAuth(request);
+    if (auth instanceof NextResponse) return auth;
 
     const { id } = await request.json();
-    const sheets = new GoogleSheets();
-    await sheets.deleteFromSignups(id);
+    const signups = new SignupsTable();
+    await signups.deleteOneAsync(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting from signups:', error);

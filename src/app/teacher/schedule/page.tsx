@@ -2,19 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { StudentEntryRow } from '@/schema/student-entry';
+import { StudentEntry } from '@/schema/student-entry';
 import Button from '@/components/Button';
+import { timeToSlotIndex, durationToSlots, formatTime, formatDuration, parseFormattedDuration, convertTo24Hour } from '@/lib/time-utils';
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 interface LessonSlot {
-    student: StudentEntryRow;
+    student: StudentEntry;
     startSlot: number;
     durationSlots: number;
 }
 
 export default function SchedulePage() {
-    const [students, setStudents] = useState<StudentEntryRow[]>([]);
+    const [students, setStudents] = useState<StudentEntry[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
@@ -28,98 +29,6 @@ export default function SchedulePage() {
         }
     }
 
-    // Helper function to convert time string to slot index
-    const timeToSlotIndex = (timeString: string): number => {
-        const parts = timeString.split(':');
-        const hours = parseInt(parts[0]);
-        const minutes = parseInt(parts[1]);
-        const totalMinutes = hours * 60 + minutes;
-        const startMinutes = 9 * 60; // 9 AM
-        return Math.floor((totalMinutes - startMinutes) / 30);
-    };
-
-    // Helper function to validate if time is between 9 AM and 6 PM
-    const isValidLessonTime = (timeString: string): boolean => {
-        let hours: number;
-        let minutes: number;
-
-        if (timeString.toLowerCase().includes('am') || timeString.toLowerCase().includes('pm')) {
-            // Handle 12-hour format with AM/PM
-            const parts = timeString.split(':');
-            hours = parseInt(parts[0]);
-            minutes = parseInt(parts[1]?.split(' ')[0] || '0');
-
-            const ampm = timeString.toLowerCase().includes('pm') ? 'pm' : 'am';
-
-            // Convert to 24-hour format
-            if (ampm === 'pm' && hours !== 12) {
-                hours += 12;
-            } else if (ampm === 'am' && hours === 12) {
-                hours = 0;
-            }
-        } else {
-            // Handle 24-hour format
-            const parts = timeString.split(':');
-            hours = parseInt(parts[0]);
-            minutes = parseInt(parts[1] || '0');
-        }
-
-        // Convert to total minutes for comparison
-        const totalMinutes = hours * 60 + minutes;
-        const nineAM = 9 * 60; // 9:00 AM
-        const sixPM = 18 * 60; // 6:00 PM
-
-        return totalMinutes >= nineAM && totalMinutes <= sixPM;
-    };
-
-    // Helper function to convert duration to number of slots
-    const durationToSlots = (duration: string): number => {
-        const parts = duration.split(':');
-        const hours = parseInt(parts[0] || '0');
-        const minutes = parseInt(parts[1] || '0');
-        const totalMinutes = hours * 60 + minutes;
-        return Math.ceil(totalMinutes / 30);
-    };
-
-    // Helper function to format time for display
-    const formatTime = (timeString: string): string => {
-        // If the time already has AM/PM, return it as-is
-        if (timeString.toLowerCase().includes('am') || timeString.toLowerCase().includes('pm')) {
-            return timeString;
-        }
-
-        // Otherwise, format it to 12-hour with AM/PM
-        const parts = timeString.split(':');
-        const hour = parseInt(parts[0]);
-        const minutes = parseInt(parts[1] || '0');
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-
-        // Make it more human-readable: omit :00 for whole hours
-        if (minutes === 0) {
-            return `${displayHour} ${ampm}`;
-        } else {
-            return `${displayHour}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-        }
-    };
-
-    // Helper function to format duration for display
-    const formatDuration = (duration: string): string => {
-        const parts = duration.split(':');
-        const hours = parseInt(parts[0] || '0');
-        const minutes = parseInt(parts[1] || '0');
-
-        if (hours > 0 && minutes > 0) {
-            return `${hours} hour${hours !== 1 ? 's' : ''} ${minutes} min${minutes !== 1 ? 's' : ''}`;
-        } else if (hours > 0) {
-            return `${hours} hour${hours !== 1 ? 's' : ''}`;
-        } else if (minutes > 0) {
-            return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
-        } else {
-            return '0 minutes';
-        }
-    };
-
     const fetchStudents = async () => {
         try {
             const res = await fetch('/api/teacher/students');
@@ -129,7 +38,7 @@ export default function SchedulePage() {
             } else {
                 setError('Failed to load students');
             }
-        } catch (err) {
+        } catch {
             setError('An error occurred');
         }
     };
@@ -145,7 +54,7 @@ export default function SchedulePage() {
                 }
 
                 await fetchStudents();
-            } catch (err) {
+            } catch {
                 setError('An error occurred');
             } finally {
                 setLoading(false);
@@ -160,8 +69,8 @@ export default function SchedulePage() {
         const dayStudents = students.filter(student => student.lessonDay === day);
         const lessonSlots: LessonSlot[] = dayStudents.map(student => ({
             student,
-            startSlot: timeToSlotIndex(student.lessonTime),
-            durationSlots: durationToSlots(student.duration)
+            startSlot: timeToSlotIndex(convertTo24Hour(student.lessonTime)),
+            durationSlots: durationToSlots(parseFormattedDuration(student.duration))
         })).sort((a, b) => a.startSlot - b.startSlot);
 
         acc[day] = lessonSlots;
@@ -208,7 +117,7 @@ export default function SchedulePage() {
                         <h1 className="text-3xl font-semibold text-foreground">Weekly Schedule</h1>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-6">
                         {DAYS_OF_WEEK.map(day => {
                             const isCurrentDay = day === currentDayOfWeek;
                             const cardClasses = `bg-white rounded-xl shadow-lg border overflow-hidden transition-all duration-300 ${isCurrentDay
@@ -242,9 +151,9 @@ export default function SchedulePage() {
                                         {lessonsByDay[day]?.length > 0 ? (
                                             lessonsByDay[day].map(lesson => (
                                                 <div
-                                                    key={lesson.student.id}
-                                                    className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 border border-slate-200/30 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group"
-                                                >
+                                                        key={lesson.student.id}
+                                                        className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 border border-slate-200/30 shadow-sm hover:shadow-md transition-all duration-200 group"
+                                                    >
                                                     <div className="flex justify-between items-start mb-2">
                                                         <div className="font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
                                                             {lesson.student.studentName}
@@ -269,11 +178,7 @@ export default function SchedulePage() {
                                                         </div>
                                                     </div>
 
-                                                    {lesson.student.notes && (
-                                                        <div className="mt-2 p-2 bg-white/50 rounded text-xs text-slate-500 italic">
-                                                            {lesson.student.notes}
-                                                        </div>
-                                                    )}
+                                                    {/* Notes intentionally not shown on schedule cards */}
                                                 </div>
                                             ))
                                         ) : (

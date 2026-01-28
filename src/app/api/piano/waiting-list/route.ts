@@ -1,4 +1,6 @@
-import { GoogleSheets } from "../../../../lib/google-sheets";
+import { WaitingListTable } from "../../../../schema/waiting-list";
+import { SignupsTable } from "../../../../schema/signups";
+import { ConfigurationTable } from "../../../../schema/configuration";
 import {
   StatusCode,
   StatusMessageStatusTextMap,
@@ -15,14 +17,30 @@ export async function POST(request: Request) {
       return Response.json({ error: validation.message }, { status: 400 });
     }
 
-    const wrapper = new GoogleSheets();
-    const status = await wrapper.addToWaitingList(body);
+    const signups = new SignupsTable();
+    const waitingList = new WaitingListTable();
+    const config = new ConfigurationTable();
 
-    if (status !== StatusCode.Success) {
-      const errorMessage =
-        StatusMessageStatusTextMap[status] || "Failed to sign up.";
-      return Response.json({ error: errorMessage, status }, { status: 400 });
+    // Check if already signed up
+    const existingSignups = await signups.readAllAsync();
+    if (existingSignups.some(s => s.emailAddress === body.emailAddress)) {
+      return Response.json({ error: StatusMessageStatusTextMap[StatusCode.StudentAlreadySignedUp], status: StatusCode.StudentAlreadySignedUp }, { status: 400 });
     }
+
+    // Check if already on waiting list
+    const existingWaiting = await waitingList.readAllAsync();
+    if (existingWaiting.some(s => s.emailAddress === body.emailAddress)) {
+      return Response.json({ error: StatusMessageStatusTextMap[StatusCode.StudentAlreadyOnWaitingList], status: StatusCode.StudentAlreadyOnWaitingList }, { status: 400 });
+    }
+
+    // Check waiting list size
+    const configData = await config.readAllAsync();
+    const maxWaiting = configData.find(c => c.key === 'maxWaitingListSize')?.value;
+    if (maxWaiting && existingWaiting.length >= parseInt(maxWaiting)) {
+      return Response.json({ error: StatusMessageStatusTextMap[StatusCode.WaitingListFull], status: StatusCode.WaitingListFull }, { status: 400 });
+    }
+
+    await waitingList.upsertOneAsync(body);
 
     return Response.json({ success: true, status: StatusCode.Success });
   } catch (error) {

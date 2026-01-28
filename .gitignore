@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# sessions
+.sessions.json
+
 # production
 /build
 

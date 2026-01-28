@@ -1,21 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleSheets } from '@/lib/google-sheets';
-import { getSession } from '@/lib/auth';
+import { StudentRollTable } from '@/schema/student-roll';
+import { requireApiAuth } from '@/lib/auth';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireApiAuth(request);
+    if (auth instanceof NextResponse) return auth;
 
     const { id } = await params;
-    const sheets = new GoogleSheets();
-    const students = await sheets.getStudents();
-    const student = students.find(s => s.id === id);
+    const studentRoll = new StudentRollTable();
+    const student = await studentRoll.readOneAsync(id);
 
     if (!student) {
       return NextResponse.json({ error: 'Student not found' }, { status: 404 });
@@ -33,31 +30,58 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireApiAuth(request);
+    if (auth instanceof NextResponse) return auth;
 
     const { id } = await params;
-    const { notes } = await request.json();
+    const updateData = await request.json();
+    console.log('API PUT request for student ID:', id);
+    console.log('Update data received:', updateData);
 
-    const sheets = new GoogleSheets();
-    const students = await sheets.getStudents();
-    const studentIndex = students.findIndex(s => s.id === id);
+    const studentRoll = new StudentRollTable();
+    const existingStudent = await studentRoll.readOneAsync(id);
 
-    if (studentIndex === -1) {
+    if (!existingStudent) {
+      console.log('Student not found with ID:', id);
       return NextResponse.json({ error: 'Student not found' }, { status: 404 });
     }
 
-    // Update the student's notes
-    const updatedStudent = { ...students[studentIndex], notes: notes || '' };
+    console.log('Current student data:', existingStudent);
+
+    // Update the student with all provided fields
+    const updatedStudent = { ...existingStudent, ...updateData };
+    console.log('Updated student data:', updatedStudent);
 
     // Update the student in Google Sheets
-    await sheets.updateStudent(id, { notes: notes || '' });
+    await studentRoll.upsertOneAsync(updatedStudent);
+    console.log('Google Sheets update result: success');
 
     return NextResponse.json({ success: true, student: updatedStudent });
   } catch (error) {
     console.error('Error updating student:', error);
     return NextResponse.json({ error: 'Failed to update student' }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const auth = await requireApiAuth(request);
+    if (auth instanceof NextResponse) return auth;
+
+    const { id } = await params;
+    const studentRoll = new StudentRollTable();
+    const existing = await studentRoll.readOneAsync(id);
+    if (!existing) {
+      return NextResponse.json({ error: 'Student not found' }, { status: 404 });
+    }
+
+    await studentRoll.deleteOneAsync(id);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting student:', error);
+    return NextResponse.json({ error: 'Failed to delete student' }, { status: 500 });
   }
 }

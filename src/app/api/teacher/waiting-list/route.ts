@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleSheets } from '@/lib/google-sheets';
-import { getSession } from '@/lib/auth';
+import { WaitingListTable } from '@/schema/waiting-list';
+import { requireApiAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireApiAuth(request);
+    if (auth instanceof NextResponse) return auth;
 
-    const sheets = new GoogleSheets();
-    const students = await sheets.getWaitingList();
+    const waitingList = new WaitingListTable();
+    const students = await waitingList.readAllAsync();
     return NextResponse.json({ students });
   } catch (error) {
     console.error('Error fetching waiting list:', error);
@@ -20,14 +18,12 @@ export async function GET(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const session = await getSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const auth = await requireApiAuth(request);
+    if (auth instanceof NextResponse) return auth;
 
     const { id } = await request.json();
-    const sheets = new GoogleSheets();
-    await sheets.deleteFromWaitingList(id);
+    const waitingList = new WaitingListTable();
+    await waitingList.deleteOneAsync(id);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting from waiting list:', error);

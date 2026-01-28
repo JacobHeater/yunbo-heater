@@ -13,12 +13,20 @@ interface ToastProviderProps {
   children: ReactNode;
 }
 
+interface ToastItem {
+  id: number;
+  message: string;
+  type: 'success' | 'error';
+  createdAt: number;
+}
+
 export function ToastProvider({ children }: ToastProviderProps) {
-  const [toasts, setToasts] = useState<Array<{ id: number; message: string; type: 'success' | 'error' }>>([]);
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   const showToast = (message: string, type: 'success' | 'error') => {
     const id = Date.now();
-    setToasts(prev => [...prev, { id, message, type }]);
+    const createdAt = Date.now();
+    setToasts(prev => [...prev, { id, message, type, createdAt }]);
   };
 
   const removeToast = (id: number) => {
@@ -28,12 +36,14 @@ export function ToastProvider({ children }: ToastProviderProps) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      {toasts.map(toast => (
+      {toasts.map((toast, index) => (
         <Toast
           key={toast.id}
           message={toast.message}
           type={toast.type}
           onClose={() => removeToast(toast.id)}
+          index={toasts.length - 1 - index} // Reverse index so newest is at bottom
+          createdAt={toast.createdAt}
         />
       ))}
     </ToastContext.Provider>

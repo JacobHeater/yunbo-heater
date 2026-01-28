@@ -2,17 +2,19 @@
 
 import { useEffect, useState, useRef, useLayoutEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { StudentEntryRow } from '@/schema/student-entry';
+import { StudentEntry } from '@/schema/student-entry';
 import { useToast } from '@/components/ToastContext';
 import { FaArrowUp, FaTrash } from 'react-icons/fa';
 import Button from '@/components/Button';
+import { calculateLessonCost } from '@/lib/student-utils';
+import ConfirmModal from '@/components/ConfirmModal';
 
 type TabType = 'students' | 'waiting' | 'signups';
 
 export default function StudentManagement() {
-  const [students, setStudents] = useState<StudentEntryRow[]>([]);
-  const [waitingList, setWaitingList] = useState<StudentEntryRow[]>([]);
-  const [signups, setSignups] = useState<StudentEntryRow[]>([]);
+  const [students, setStudents] = useState<StudentEntry[]>([]);
+  const [waitingList, setWaitingList] = useState<StudentEntry[]>([]);
+  const [signups, setSignups] = useState<StudentEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('students');
@@ -20,8 +22,11 @@ export default function StudentManagement() {
   const { showToast } = useToast();
   const [promoting, setPromoting] = useState<Set<string>>(new Set());
   const [deleting, setDeleting] = useState<Set<string>>(new Set());
+  const [moving, setMoving] = useState<Set<string>>(new Set());
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string; type: 'waiting' | 'signup' } | null>(null);
   const [confirmPromote, setConfirmPromote] = useState<{ id: string; name: string; type: 'waiting' | 'signup' } | null>(null);
+  const [confirmMove, setConfirmMove] = useState<{ id: string; name: string; type: 'waiting' | 'signup' } | null>(null);
+
   const studentsButtonRef = useRef<HTMLButtonElement>(null);
   const waitingButtonRef = useRef<HTMLButtonElement>(null);
   const signupsButtonRef = useRef<HTMLButtonElement>(null);
@@ -74,10 +79,12 @@ export default function StudentManagement() {
   }, [router]);
 
   // Calculate indicator position when active tab changes
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (loading) return; // Don't position during loading
+
     const updateIndicator = () => {
       let buttonRef: HTMLButtonElement | null = null;
-      
+
       switch (activeTab) {
         case 'students':
           buttonRef = studentsButtonRef.current;
@@ -89,15 +96,46 @@ export default function StudentManagement() {
           buttonRef = signupsButtonRef.current;
           break;
       }
-      
-      if (buttonRef && indicatorRef.current) {
+
+      if (buttonRef && indicatorRef.current && buttonRef.offsetWidth > 0) {
         indicatorRef.current.style.left = `${buttonRef.offsetLeft}px`;
         indicatorRef.current.style.width = `${buttonRef.offsetWidth}px`;
       }
     };
 
-    requestAnimationFrame(updateIndicator);
-  }, [activeTab, students.length, waitingList.length, signups.length]);
+    // Wait for DOM to be ready
+    const timeoutId = setTimeout(updateIndicator, 100);
+
+    return () => clearTimeout(timeoutId);
+  }, [activeTab, loading]);
+
+  // Update indicator when data changes (button text/counts change)
+  useLayoutEffect(() => {
+    if (loading) return;
+
+    const updateIndicator = () => {
+      let buttonRef: HTMLButtonElement | null = null;
+
+      switch (activeTab) {
+        case 'students':
+          buttonRef = studentsButtonRef.current;
+          break;
+        case 'waiting':
+          buttonRef = waitingButtonRef.current;
+          break;
+        case 'signups':
+          buttonRef = signupsButtonRef.current;
+          break;
+      }
+
+      if (buttonRef && indicatorRef.current && buttonRef.offsetWidth > 0) {
+        indicatorRef.current.style.left = `${buttonRef.offsetLeft}px`;
+        indicatorRef.current.style.width = `${buttonRef.offsetWidth}px`;
+      }
+    };
+
+    updateIndicator();
+  }, [students.length, waitingList.length, signups.length, loading]);
 
   const promoteStudent = async (id: string, type: 'waiting' | 'signup') => {
     setPromoting(prev => new Set(prev).add(id));
@@ -122,6 +160,55 @@ export default function StudentManagement() {
         return newSet;
       });
       setConfirmPromote(null);
+    }
+  };
+
+  const moveStudent = async (id: string, fromType: 'waiting' | 'signup') => {
+    setMoving(prev => new Set(prev).add(id));
+    try {
+      // Find the student data from local state
+      const student = fromType === 'waiting' ? waitingList.find(s => s.id === id) : signups.find(s => s.id === id);
+      if (!student) {
+        showToast('Student not found', 'error');
+        return;
+      }
+
+      // Delete from source via teacher API
+      const deleteEndpoint = fromType === 'waiting' ? '/api/teacher/waiting-list' : '/api/teacher/signups';
+      const deleteRes = await fetch(deleteEndpoint, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      if (!deleteRes.ok) {
+        showToast('Failed to remove from source list', 'error');
+        return;
+      }
+
+      // Post to target piano endpoint
+      const target = fromType === 'waiting' ? 'signup' : 'waiting-list';
+      const postEndpoint = fromType === 'waiting' ? '/api/piano/signup' : '/api/piano/waiting-list';
+      const postRes = await fetch(postEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(student),
+      });
+      if (postRes.ok) {
+        await fetchData();
+        showToast('Student moved successfully!', 'success');
+      } else {
+        const err = await postRes.json().catch(() => ({}));
+        showToast(err?.error || 'Failed to add to target list', 'error');
+      }
+    } catch (err) {
+      showToast('An error occurred during move', 'error');
+    } finally {
+      setMoving(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
+      setConfirmMove(null);
     }
   };
 
@@ -176,7 +263,7 @@ export default function StudentManagement() {
     );
   }
 
-  const renderCards = (data: StudentEntryRow[], showPromote: boolean, promoteType?: 'waiting' | 'signup') => {
+  const renderCards = (data: StudentEntry[], showPromote: boolean, promoteType?: 'waiting' | 'signup') => {
     if (data.length === 0) {
       return (
         <div className="text-center py-12">
@@ -197,7 +284,11 @@ export default function StudentManagement() {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {data.map((student) => (
-          <div key={student.id} className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 border border-slate-200/30 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer group" onClick={() => router.push(`/teacher/admin/student/${student.id}`)}>
+          <div
+            key={student.id}
+            className={`bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 border border-slate-200/30 shadow-sm hover:shadow-md transition-all duration-200 ${showPromote ? '' : 'cursor-pointer'} group`}
+            onClick={!showPromote ? () => router.push(`/teacher/admin/student/${student.id}`) : undefined}
+          >
             <div className="flex justify-between items-start mb-2">
               <div className="font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">
                 {student.studentName}
@@ -205,7 +296,7 @@ export default function StudentManagement() {
               {showPromote && promoteType && (
                 <div className="flex space-x-1 ml-2">
                   <button
-                    onClick={() => setConfirmPromote({ id: student.id, name: student.studentName, type: promoteType })}
+                    onClick={(e) => { e.stopPropagation(); setConfirmPromote({ id: student.id, name: student.studentName, type: promoteType }); }}
                     disabled={promoting.has(student.id)}
                     className="p-1.5 bg-green-500 hover:bg-green-600 text-white rounded transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                     title="Promote to students"
@@ -213,10 +304,18 @@ export default function StudentManagement() {
                     {promoting.has(student.id) ? '...' : <FaArrowUp />}
                   </button>
                   <button
-                    onClick={() => setConfirmDelete({ id: student.id, name: student.studentName, type: promoteType })}
+                    onClick={(e) => { e.stopPropagation(); setConfirmMove({ id: student.id, name: student.studentName, type: promoteType }); }}
+                    disabled={moving.has(student.id)}
+                    className="p-1.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    title={promoteType === 'waiting' ? 'Move to signups' : 'Move to waiting list'}
+                  >
+                    {moving.has(student.id) ? '...' : '⇄'}
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setConfirmDelete({ id: student.id, name: student.studentName, type: promoteType }); }}
                     disabled={deleting.has(student.id)}
                     className="p-1.5 bg-red-500 hover:bg-red-600 text-white rounded transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    title="Delete student"
+                    title="Delete candidate"
                   >
                     {deleting.has(student.id) ? '...' : <FaTrash />}
                   </button>
@@ -245,13 +344,21 @@ export default function StudentManagement() {
                 <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
                 <span className="font-medium">Duration:</span> {student.duration}
               </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-orange-400 rounded-full"></span>
+                <span className="font-medium">Start Date:</span> {student.startDate}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-teal-400 rounded-full"></span>
+                <span className="font-medium">Rate:</span> {student.minutelyRate}/min
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 bg-cyan-400 rounded-full"></span>
+                <span className="font-medium">Cost:</span> ${calculateLessonCost(student.minutelyRate, student.duration)}
+              </div>
             </div>
 
-            {student.notes && (
-              <div className="mt-2 p-2 bg-white/50 rounded text-xs text-slate-500 italic">
-                {student.notes}
-              </div>
-            )}
+            {/* Notes intentionally not shown on student cards; edit page only */}
           </div>
         ))}
       </div>
@@ -325,55 +432,44 @@ export default function StudentManagement() {
         </div>
       </div>
 
-      {confirmDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Confirm Deletion</h3>
-            <p className="text-foreground/70 mb-6">
-              Are you sure you want to delete <strong>{confirmDelete.name}</strong> from the {confirmDelete.type === 'waiting' ? 'waiting list' : 'signups'}? This action cannot be undone.
-            </p>
-            <div className="flex space-x-4">
-              <button
-                onClick={() => setConfirmDelete(null)}
-                className="flex-1 px-4 py-2 bg-gray-200 text-foreground rounded hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => deleteStudent(confirmDelete.id, confirmDelete.type)}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        open={!!confirmDelete}
+        title="Confirm Deletion"
+        onCancel={() => setConfirmDelete(null)}
+        onConfirm={() => confirmDelete && deleteStudent(confirmDelete.id, confirmDelete.type)}
+        loading={confirmDelete ? deleting.has(confirmDelete.id) : false}
+        cancelLabel="Cancel"
+        confirmLabel="Delete"
+        confirmVariant="danger"
+      >
+        Are you sure you want to delete <strong>{confirmDelete?.name}</strong> from the {confirmDelete?.type === 'waiting' ? 'waiting list' : 'signups'}? This action cannot be undone.
+      </ConfirmModal>
 
-      {confirmPromote && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Confirm Promotion</h3>
-            <p className="text-foreground/70 mb-6">
-              Are you sure you want to promote <strong>{confirmPromote.name}</strong> from the {confirmPromote.type === 'waiting' ? 'waiting list' : 'signups'} to the student roll?
-            </p>
-            <div className="flex space-x-4">
-              <button
-                onClick={() => setConfirmPromote(null)}
-                className="flex-1 px-4 py-2 bg-gray-200 text-foreground rounded hover:bg-gray-300"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => promoteStudent(confirmPromote.id, confirmPromote.type)}
-                className="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-              >
-                Promote
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        open={!!confirmPromote}
+        title="Confirm Promotion"
+        onCancel={() => setConfirmPromote(null)}
+        onConfirm={() => confirmPromote && promoteStudent(confirmPromote.id, confirmPromote.type)}
+        loading={confirmPromote ? promoting.has(confirmPromote.id) : false}
+        cancelLabel="Cancel"
+        confirmLabel="Promote"
+        confirmVariant="primary"
+      >
+        Are you sure you want to promote <strong>{confirmPromote?.name}</strong> from the {confirmPromote?.type === 'waiting' ? 'waiting list' : 'signups'} to the student roll?
+      </ConfirmModal>
+
+      <ConfirmModal
+        open={!!confirmMove}
+        title="Confirm Move"
+        onCancel={() => setConfirmMove(null)}
+        onConfirm={() => confirmMove && moveStudent(confirmMove.id, confirmMove.type)}
+        loading={confirmMove ? moving.has(confirmMove.id) : false}
+        cancelLabel="Cancel"
+        confirmLabel="Move"
+        confirmVariant="primary"
+      >
+        Are you sure you want to move <strong>{confirmMove?.name}</strong> from the {confirmMove?.type === 'waiting' ? 'waiting list' : 'signups'} to the {confirmMove?.type === 'waiting' ? 'signups' : 'waiting list'}?
+      </ConfirmModal>
     </div>
   );
 }

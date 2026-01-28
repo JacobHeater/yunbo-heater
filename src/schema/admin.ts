@@ -1,26 +1,35 @@
-import { ColumnDefinition, Table } from "./table";
+import { ColumnDefinition, GoogleSheetsTableBase } from "./table";
+import { DataType } from './data-types';
 
-export interface AdminRow {
+export interface Admin {
+  id: string;
   emailAddress: string;
   password: string;
 }
 
-export class Admin implements Table<AdminRow> {
+export class AdminTable extends GoogleSheetsTableBase<Admin> {
   name: string = "Admin";
-  columns: ColumnDefinition[] = [
-    {
+  columns: Record<keyof Admin, ColumnDefinition> = {
+    id: {
+      name: "Id",
+      dataType: DataType.String,
+      nullable: false,
+    },
+    emailAddress: {
       name: "Email Address",
-      dataType: "string",
+      dataType: DataType.String,
       nullable: false,
     },
-    {
+    password: {
       name: "Password",
-      dataType: "string",
+      dataType: DataType.String,
       nullable: false,
     },
-  ];
-  propertyMap: Record<string, keyof AdminRow> = {
-    "Email Address": "emailAddress",
-    "Password": "password",
   };
+  readAllAsync(): Promise<Admin[]> {
+    throw new Error("Method not implemented.");
+  }
+  readOneAsync(id: string): Promise<Admin | null> {
+    throw new Error("Method not implemented.");
+  }
 }

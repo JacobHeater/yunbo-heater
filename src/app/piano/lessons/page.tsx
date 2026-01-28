@@ -1,6 +1,6 @@
 import SignupForm from "@/components/SignupForm";
-import { Schedule, Campaign, Piano } from "@mui/icons-material";
-import { FaMusic } from 'react-icons/fa';
+import LessonPricingDisplay from "@/components/LessonPricingDisplay";
+import { FaCalendarAlt, FaBullhorn, FaMusic, FaExclamationTriangle } from 'react-icons/fa';
 
 export default async function PianoLessons() {
   let data;
@@ -26,20 +26,12 @@ export default async function PianoLessons() {
     );
   }
 
-  // Calculate pricing for different lesson lengths
-  const calculatePricing = () => {
-    if (!pricing?.pricing?.[0]?.price) return null;
-    
-    const ratePerMinute = pricing.pricing[0].price;
-    const lessonLengths = [20, 30, 45];
-    
-    return lessonLengths.map(length => ({
-      length,
-      cost: (Math.round(ratePerMinute * length)).toFixed(2)
-    }));
-  };
+  // Pricing data is already calculated by the API
+  const lessonPricing = pricing?.pricing;
 
-  const lessonPricing = calculatePricing();
+  // Helper values for spots banner
+  const lowSpots = data.spotsAvailable < 5;
+  const spotLabel = data.spotsAvailable === 1 ? 'Spot' : 'Spots';
 
   if (!data.available) {
     if (data.waitingListAvailable) {
@@ -56,25 +48,13 @@ export default async function PianoLessons() {
 
               <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 mb-8 max-w-2xl mx-auto">
                 <div className="flex items-center justify-center mb-2">
-                  <Schedule sx={{ color: '#1e40af', fontSize: 24, marginRight: 8 }} />
+                  <FaCalendarAlt className="text-blue-600 text-2xl mr-2" />
                   <span className="font-semibold text-blue-800">Waiting List Available</span>
                 </div>
                 <p className="text-blue-700">Join our waiting list to be notified when spots become available!</p>
               </div>
 
-              {lessonPricing && (
-                <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6 mb-8 max-w-2xl mx-auto">
-                  <h3 className="text-xl font-semibold text-foreground mb-4 text-center">Lesson Pricing</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {lessonPricing.map(({ length, cost }) => (
-                      <div key={length} className="text-center">
-                        <div className="text-2xl font-bold text-green-600">${cost}</div>
-                        <div className="text-sm text-foreground/70">{length} minutes</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {lessonPricing && <LessonPricingDisplay pricing={lessonPricing} />}
 
               <SignupForm buttonText="Join Waiting List" mode="waitingList" />
             </div>
@@ -86,7 +66,7 @@ export default async function PianoLessons() {
         <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center bg-background">
           <div className="text-center max-w-2xl mx-auto px-4">
             <div className="mb-6">
-              <h1 className="text-4xl font-bold text-foreground mb-4">Currently Full! <Piano className="inline text-4xl ml-2 align-middle" /></h1>
+              <h1 className="text-4xl font-bold text-foreground mb-4">Currently Full<FaExclamationTriangle className="inline text-4xl ml-2 align-middle" /></h1>
             </div>
 
             <p className="text-lg text-foreground/80 mb-6 leading-relaxed">
@@ -120,27 +100,15 @@ export default async function PianoLessons() {
             Thank you for your interest in piano lessons. It is a privilege to share the joy of music with students of all ages and abilities. Please complete the form below, and I will be in touch shortly to discuss how we can begin your musical journey together.
           </p>
 
-          {lessonPricing && (
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6 mb-8 max-w-2xl mx-auto">
-              <h3 className="text-xl font-semibold text-foreground mb-4 text-center">Lesson Pricing</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {lessonPricing.map(({ length, cost }) => (
-                  <div key={length} className="text-center">
-                    <div className="text-2xl font-bold text-green-600">${cost}</div>
-                    <div className="text-sm text-foreground/70">{length} minutes</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {lessonPricing && <LessonPricingDisplay pricing={lessonPricing} />}
 
           {data.spotsAvailable <= 10 && (
-            <div className="bg-yellow-100 border border-yellow-300 rounded-lg p-4 mb-8 max-w-2xl mx-auto">
+            <div className={`${lowSpots ? 'bg-red-100 border-red-300' : 'bg-yellow-100 border-yellow-300'} rounded-lg p-4 mb-8 max-w-2xl mx-auto`}>
               <div className="flex items-center justify-center mb-2">
-                <Campaign sx={{ color: '#92400e', fontSize: 24, marginRight: 8 }} />
-                <span className="font-semibold text-yellow-800">Only {data.spotsAvailable} Spots Left!</span>
+                <FaBullhorn className={`${lowSpots ? 'text-red-600' : 'text-yellow-600'} text-2xl mr-2`} />
+                <span className={`${lowSpots ? 'text-red-800' : 'text-yellow-800'} font-semibold`}>Only {data.spotsAvailable} {spotLabel} Left!</span>
               </div>
-              <p className="text-yellow-700">Spots fill up quickly. Secure your piano lessons spot today!</p>
+              <p className={`${lowSpots ? 'text-red-700' : 'text-yellow-700'}`}>Spots fill up quickly. Secure your spot in piano lessons today!</p>
             </div>
           )}
 

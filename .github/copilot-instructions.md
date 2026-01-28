@@ -1,5 +1,55 @@
 # Copilot Instructions for yunboheater.github.io
 
+## 🚨 CRITICAL WARNING: DO NOT RESTART DEV SERVER 🚨
+
+**NEVER RESTART THE DEVELOPMENT SERVER!** This Next.js application has **HOT RELOADING ENABLED**. Code changes are automatically reflected without restarting the server. Restarting the server causes unnecessary delays and breaks the development workflow.
+
+**If you restart the dev server, you're doing it wrong!** Hot reloading handles all code updates automatically.
+
+## 🚨 CRITICAL WARNING: DO NOT RESTART DEV SERVER 🚨
+
+**NEVER RESTART THE DEVELOPMENT SERVER!** This Next.js application has **HOT RELOADING ENABLED**. Code changes are automatically reflected without restarting the server. Restarting the server causes unnecessary delays and breaks the development workflow.
+
+**If you restart the dev server, you're doing it wrong!** Hot reloading handles all code updates automatically.
+
+## 🚨 CRITICAL WARNING: DO NOT RESTART DEV SERVER 🚨
+
+**NEVER RESTART THE DEVELOPMENT SERVER!** This Next.js application has **HOT RELOADING ENABLED**. Code changes are automatically reflected without restarting the server. Restarting the server causes unnecessary delays and breaks the development workflow.
+
+**If you restart the dev server, you're doing it wrong!** Hot reloading handles all code updates automatically.
+
+## 🚨 CRITICAL WARNING: DO NOT RESTART DEV SERVER 🚨
+
+**NEVER RESTART THE DEVELOPMENT SERVER!** This Next.js application has **HOT RELOADING ENABLED**. Code changes are automatically reflected without restarting the server. Restarting the server causes unnecessary delays and breaks the development workflow.
+
+**If you restart the dev server, you're doing it wrong!** Hot reloading handles all code updates automatically.
+
+## 🚨 CRITICAL WARNING: DO NOT RUN NPM RUN BUILD 🚨
+
+**DO NOT RUN `npm run build` WHEN MAKING CHANGES BECAUSE IT IS SLOW AND UNNECESSARY WITH HOT RELOADING!**
+
+## 🚨 CRITICAL WARNING: DO NOT RUN NPM RUN BUILD 🚨
+
+**DO NOT RUN `npm run build` WHEN MAKING CHANGES BECAUSE IT IS SLOW AND UNNECESSARY WITH HOT RELOADING!**
+
+## 🚨 CRITICAL WARNING: DO NOT RUN NPM RUN BUILD 🚨
+
+**DO NOT RUN `npm run build` WHEN MAKING CHANGES BECAUSE IT IS SLOW AND UNNECESSARY WITH HOT RELOADING!**
+
+## 🚨 CRITICAL WARNING: DO NOT RUN NPM RUN BUILD 🚨
+
+**DO NOT RUN `npm run build` WHEN MAKING CHANGES BECAUSE IT IS SLOW AND UNNECESSARY WITH HOT RELOADING!**
+
+## 🚨 CRITICAL WARNING: DO NOT RUN NPM RUN BUILD 🚨
+
+**DO NOT RUN `npm run build` WHEN MAKING CHANGES BECAUSE IT IS SLOW AND UNNECESSARY WITH HOT RELOADING!**
+
+## 🚨 CRITICAL WARNING: DO NOT RUN NPM RUN BUILD 🚨
+
+**DO NOT RUN `npm run build` WHEN MAKING CHANGES BECAUSE IT IS SLOW AND UNNECESSARY WITH HOT RELOADING!**
+
+---
+
 This repository hosts a Next.js application using the App Router, TypeScript, and Tailwind CSS v4.
 
 ## Big Picture Architecture
@@ -17,7 +67,13 @@ This repository hosts a Next.js application using the App Router, TypeScript, an
 
 ## Developer Workflows
 
-- **Local Development**: Run `npm run dev` (starts on http://localhost:3000)
+### ⚠️  CRITICAL: Development Server Management
+- **🚫 NEVER RESTART**: The dev server has HOT RELOADING - code changes apply instantly
+- **🚫 NEVER KILL**: The dev server process - let it run continuously
+- **✅ ONE TIME ONLY**: Run `npm run dev` once at the start of development session
+- **✅ TRUST HOT RELOAD**: All file changes are automatically reflected
+
+- **Local Development**: Run `npm run dev` (starts on http://localhost:3000 with hot reloading enabled - no server restart needed for code changes)
 - **Build**: `npm run build` (produces optimized production build)
 - **Start Production**: `npm run start` (serves built app)
 - **Linting**: `npm run lint` (ESLint with Next.js config)

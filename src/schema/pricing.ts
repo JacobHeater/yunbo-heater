@@ -1,26 +1,32 @@
-import { ColumnDefinition, Table } from "./table";
+import { GoogleSheetsTableBase, ColumnDefinition } from "./table";
+import { WriteFormat, ReadFormat } from "./formatting";
+import { DataType } from './data-types';
 
-export interface PricingRow {
+export interface Pricing {
+  id: string;
   price: number;
   rate: string;
 }
 
-export class Pricing implements Table<PricingRow> {
+export class PricingTable extends GoogleSheetsTableBase<Pricing> {
   name: string = "Pricing";
-  columns: ColumnDefinition[] = [
-    {
+  columns: Record<keyof Pricing, ColumnDefinition> = {
+    id: {
+      name: "Id",
+      dataType: DataType.String,
+      nullable: false,
+    },
+    price: {
       name: "Price",
-      dataType: "currency",
+      dataType: DataType.Currency,
       nullable: false,
+      writeFormat: WriteFormat.CURRENCY,
+      readFormat: ReadFormat.CURRENCY
     },
-    {
+    rate: {
       name: "Rate",
-      dataType: "string",
+      dataType: DataType.String,
       nullable: false,
     },
-  ];
-  propertyMap: Record<string, keyof PricingRow> = {
-    "Price": "price",
-    "Rate": "rate",
   };
 }
