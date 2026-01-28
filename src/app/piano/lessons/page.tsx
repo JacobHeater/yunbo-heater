@@ -8,63 +8,56 @@ import { FaCalendarAlt, FaBullhorn, FaMusic, FaExclamationTriangle } from 'react
 export default function PianoLessons() {
   const [data, setData] = useState<any | null>(null);
   const [pricing, setPricing] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // availability
+  const [pricingLoading, setPricingLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const [availabilityRes, pricingRes] = await Promise.all([
-          fetch(`/api/piano/availability`),
-          fetch(`/api/piano/pricing`)
-        ]);
+        const availabilityRes = await fetch('/api/piano/availability');
         if (!mounted) return;
         const availability = await availabilityRes.json();
-        const pricingData = pricingRes.ok ? await pricingRes.json() : null;
         setData(availability);
-        setPricing(pricingData);
+        setLoading(false);
+
+        try {
+          const pricingRes = await fetch('/api/piano/pricing');
+          if (!mounted) return;
+          const pricingData = pricingRes.ok ? await pricingRes.json() : null;
+          setPricing(pricingData);
+        } catch (pricingErr) {
+          console.error('Error fetching pricing:', pricingErr);
+        } finally {
+          if (mounted) setPricingLoading(false);
+        }
       } catch (err) {
-        console.error('Error fetching data:', err);
+        console.error('Error fetching availability:', err);
         if (mounted) setError('Unable to load page data.');
-      } finally {
         if (mounted) setLoading(false);
+        if (mounted) setPricingLoading(false);
       }
     })();
     return () => { mounted = false; };
   }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-[calc(100vh-5rem)] bg-background flex items-center justify-center py-16 px-4">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-foreground mx-auto mb-4"></div>
-          <p className="text-foreground/70">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center bg-background">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-foreground mb-4">Error</h1>
-          <p className="text-lg text-foreground/80">{error || 'Unable to load page data. Please try again later.'}</p>
-        </div>
-      </div>
-    );
-  }
+  // Don't block rendering on availability; show the page immediately and
+  // render inline placeholders. If availability failed and we have no data,
+  // show a small inline error banner instead of a full-screen overlay.
+  const showErrorBanner = !!error && !data;
+  const availabilityData = data ?? { available: false, spotsAvailable: 0, waitingListAvailable: false };
 
   // Pricing data is already calculated by the API
-  const lessonPricing = pricing?.pricing;
+  type PricingItem = { length: number; cost: string };
+  const lessonPricing = pricing?.pricing as PricingItem[] | undefined;
 
   // Helper values for spots banner
-  const lowSpots = data.spotsAvailable < 5;
-  const spotLabel = data.spotsAvailable === 1 ? 'Spot' : 'Spots';
+  const lowSpots = availabilityData.spotsAvailable < 5;
+  const spotLabel = availabilityData.spotsAvailable === 1 ? 'Spot' : 'Spots';
 
-  if (!data.available) {
-    if (data.waitingListAvailable) {
+  if (!loading && !availabilityData.available) {
+    if (availabilityData.waitingListAvailable) {
       return (
         <div className="min-h-[calc(100vh-5rem)] bg-background">
           <section className="py-16">
@@ -84,9 +77,9 @@ export default function PianoLessons() {
                 <p className="text-blue-700">Join our waiting list to be notified when spots become available!</p>
               </div>
 
-              {lessonPricing && <LessonPricingDisplay pricing={lessonPricing} />}
+                {lessonPricing && <LessonPricingDisplay pricing={lessonPricing} />}
 
-              <SignupForm buttonText="Join Waiting List" mode="waitingList" />
+                  <SignupForm buttonText="Join Waiting List" mode="waitingList" disabled={loading} />
             </div>
           </section>
         </div>
@@ -126,23 +119,47 @@ export default function PianoLessons() {
           <h1 className="text-3xl md:text-4xl font-semibold text-foreground mb-6">
             Piano Lessons with Yunbo Heater
           </h1>
-          <p className="text-lg text-foreground/80 leading-relaxed mb-8">
-            Thank you for your interest in piano lessons. It is a privilege to share the joy of music with students of all ages and abilities. Please complete the form below, and I will be in touch shortly to discuss how we can begin your musical journey together.
-          </p>
+          {loading ? (
+            <p className="text-lg text-foreground/80 leading-relaxed mb-8">Thanks for your interest — checking Yunbo's availability...</p>
+          ) : (
+            <p className="text-lg text-foreground/80 leading-relaxed mb-8">
+              Thank you for your interest in piano lessons. It is a privilege to share the joy of music with students of all ages and abilities. Please complete the form below, and I will be in touch shortly to discuss how we can begin your musical journey together.
+            </p>
+          )}
 
-          {lessonPricing && <LessonPricingDisplay pricing={lessonPricing} />}
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6 mb-8 max-w-2xl mx-auto">
+            <h3 className="text-xl font-semibold text-foreground mb-4 text-center">Lesson Pricing</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {pricingLoading ? (
+                // Minimal placeholders — show three simple skeleton cells
+                [0,1,2].map(i => (
+                  <div key={i} className="text-center">
+                    <div className="h-6 w-20 mx-auto bg-foreground/10 rounded animate-pulse mb-2"></div>
+                    <div className="h-4 w-16 mx-auto bg-foreground/10 rounded animate-pulse"></div>
+                  </div>
+                ))
+              ) : (
+                (lessonPricing || []).map(({ length, cost }: PricingItem) => (
+                  <div key={length} className="text-center">
+                    <div className="text-2xl font-bold text-green-600">${cost}</div>
+                    <div className="text-sm text-foreground/70">{length} minutes</div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
 
-          {data.spotsAvailable <= 10 && (
+          {!loading && availabilityData.spotsAvailable <= 10 && (
             <div className={`${lowSpots ? 'bg-red-100 border-red-300' : 'bg-yellow-100 border-yellow-300'} rounded-lg p-4 mb-8 max-w-2xl mx-auto`}>
               <div className="flex items-center justify-center mb-2">
                 <FaBullhorn className={`${lowSpots ? 'text-red-600' : 'text-yellow-600'} text-2xl mr-2`} />
-                <span className={`${lowSpots ? 'text-red-800' : 'text-yellow-800'} font-semibold`}>Only {data.spotsAvailable} {spotLabel} Left!</span>
+                <span className={`${lowSpots ? 'text-red-800' : 'text-yellow-800'} font-semibold`}>Only {availabilityData.spotsAvailable} {spotLabel} Left!</span>
               </div>
               <p className={`${lowSpots ? 'text-red-700' : 'text-yellow-700'}`}>Spots fill up quickly. Secure your spot in piano lessons today!</p>
             </div>
           )}
 
-          <SignupForm buttonText="Sign Up for Lessons" mode="signup" />
+          <SignupForm buttonText="Sign Up for Lessons" mode="signup" disabled={loading} />
         </div>
       </section>
     </div>

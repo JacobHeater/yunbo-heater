@@ -7,11 +7,12 @@ import { useToast } from './ToastContext';
 import { validateStudentData } from '../lib/validation';
 
 interface SignupFormProps {
-    buttonText?: string;
-    mode: 'signup' | 'waitingList' | 'manual';
+  buttonText?: string;
+  mode: 'signup' | 'waitingList' | 'manual';
+  disabled?: boolean;
 }
 
-export default function SignupForm({ buttonText = "Sign Up", mode = 'signup' }: SignupFormProps) {
+export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', disabled = false }: SignupFormProps) {
   const [formData, setFormData] = useState<Omit<StudentEntry, 'id' | 'notes'>>({
     studentName: '',
     phoneNumber: '',
@@ -27,6 +28,10 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup' }: 
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useToast();
+
+  const inputClass = disabled
+    ? 'w-full px-3 py-2 border rounded-md bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed opacity-80'
+    : 'w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500';
 
   // Fetch default rate for signup, waiting list, and manual modes
   useEffect(() => {
@@ -59,6 +64,7 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup' }: 
 
     // Client-side validation using shared validation functions
     const validation = validateStudentData(formData, mode === 'manual');
+    if (disabled) return;
     if (!validation.isValid) {
       showToast(validation.message!, 'error');
       return;
@@ -116,8 +122,9 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup' }: 
               id="studentName"
               value={formData.studentName}
               onChange={(e) => setFormData({ ...formData, studentName: e.target.value })}
+              disabled={disabled}
               placeholder="Full Name"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
           </div>
 
@@ -130,8 +137,9 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup' }: 
               id="phoneNumber"
               value={formData.phoneNumber}
               onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+              disabled={disabled}
               placeholder="(555) 123-4567"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
           </div>
 
@@ -144,8 +152,9 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup' }: 
               id="emailAddress"
               value={formData.emailAddress}
               onChange={(e) => setFormData({ ...formData, emailAddress: e.target.value })}
+              disabled={disabled}
               placeholder="student@example.com"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
           </div>
 
@@ -160,8 +169,9 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup' }: 
               max="120"
               value={formData.age || ''}
               onChange={(e) => setFormData({ ...formData, age: parseInt(e.target.value) || 0 })}
+              disabled={disabled}
               placeholder="Age"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputClass}
             />
           </div>
 
@@ -173,7 +183,8 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup' }: 
               id="lessonDay"
               value={formData.lessonDay}
               onChange={(e) => setFormData({ ...formData, lessonDay: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={disabled}
+              className={inputClass}
             >
               <option value="">Select a day</option>
               <option value="Monday">Monday</option>
@@ -195,7 +206,8 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup' }: 
               id="lessonTime"
               value={formData.lessonTime}
               onChange={(e) => setFormData({ ...formData, lessonTime: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={disabled}
+              className={inputClass}
             />
           </div>
 
@@ -207,7 +219,8 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup' }: 
               id="duration"
               value={formData.duration}
               onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={disabled}
+              className={inputClass}
             >
               <option value="">Select duration</option>
               <option value="00:20:00">20 minutes</option>
@@ -224,7 +237,8 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup' }: 
               id="skillLevel"
               value={formData.skillLevel}
               onChange={(e) => setFormData({ ...formData, skillLevel: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={disabled}
+              className={inputClass}
             >
               <option value="">Select skill level</option>
               <option value="Beginner">Beginner</option>
@@ -242,7 +256,8 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup' }: 
               id="startDate"
               value={formData.startDate}
               onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              disabled={disabled}
+              className={inputClass}
             />
           </div>
 
@@ -256,8 +271,9 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup' }: 
                 id="minutelyRate"
                 value={formData.minutelyRate}
                 onChange={(e) => setFormData({ ...formData, minutelyRate: e.target.value })}
+                disabled={disabled}
                 placeholder="e.g., $50.00"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={inputClass}
               />
             </div>
           )}
@@ -266,7 +282,7 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup' }: 
         <div className="text-center pt-8">
           <Button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || disabled}
             variant="primary"
             size="md"
           >

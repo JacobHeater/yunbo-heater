@@ -35,6 +35,7 @@ export default function Button({
   };
 
   const classes = `${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
+  const disabledClasses = disabled ? ' opacity-60 cursor-not-allowed pointer-events-none' : '';
 
   if (href) {
     return (
@@ -45,7 +46,7 @@ export default function Button({
   }
 
   return (
-    <button onClick={onClick} disabled={disabled} type={type} className={classes}>
+    <button onClick={onClick} disabled={disabled} type={type} className={`${classes}${disabledClasses}`}>
       {children}
     </button>
   );
