@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { FaChevronRight } from 'react-icons/fa';
 import { eventBus } from '@/lib/event-bus';
 import Button from '@/components/Button';
+import { convertTo12Hour } from '@/lib/time-utils';
 
 export default function TeacherDashboard() {
   const [session, setSession] = useState<{ email: string; role: string } | null>(null);
@@ -166,7 +167,7 @@ export default function TeacherDashboard() {
                     {workingHours.map((w) => (
                       <div key={w.id} className="flex justify-between items-center">
                         <div className="font-medium text-foreground/90">{w.dayOfWeek}</div>
-                        <div className="text-foreground/70">{w.startTime} — {w.endTime}</div>
+                        <div className="text-foreground/70">{convertTo12Hour(w.startTime)} — {convertTo12Hour(w.endTime)}</div>
                       </div>
                     ))}
                   </div>

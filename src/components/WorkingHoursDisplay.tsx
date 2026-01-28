@@ -1,18 +1,9 @@
 import type { WorkingHours } from '../schema/working-hours';
+import { convertTo12Hour } from '../lib/time-utils';
 
 interface WorkingHoursDisplayProps {
   workingHours: WorkingHours[];
   loading?: boolean;
-}
-
-function formatTime(time24: string): string {
-  if (!time24) return '';
-  const [hours, minutes] = time24.split(':');
-  let hour12 = parseInt(hours);
-  const ampm = hour12 >= 12 ? 'PM' : 'AM';
-  if (hour12 > 12) hour12 -= 12;
-  if (hour12 === 0) hour12 = 12;
-  return `${hour12}:${minutes} ${ampm}`;
 }
 
 export default function WorkingHoursDisplay({ workingHours, loading = false }: WorkingHoursDisplayProps) {
@@ -34,7 +25,7 @@ export default function WorkingHoursDisplay({ workingHours, loading = false }: W
           workingHours.map((wh) => (
             <div key={wh.id} className="text-center">
               <div className="font-semibold text-blue-600">{wh.dayOfWeek}</div>
-              <div className="text-sm text-foreground/70">{formatTime(wh.startTime)} — {formatTime(wh.endTime)}</div>
+              <div className="text-sm text-foreground/70">{convertTo12Hour(wh.startTime)} — {convertTo12Hour(wh.endTime)}</div>
             </div>
           ))
         )}

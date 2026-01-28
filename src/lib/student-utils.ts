@@ -1,6 +1,5 @@
 import { format, parse, parseISO } from 'date-fns';
-import { convertReadTimeSpanToWriteFormat } from '../schema/formatting';
-import { formatDuration, formatTime, convertTo24Hour } from './time-utils';
+import { formatDuration, formatTime, convertTo24Hour, convertReadTimeSpanToWriteFormat } from './time-utils';
 import { LessonPrice } from '@/app/models/pricing';
 
 export const calculateLessonCost = (minutelyRate: string, duration: string): string => {

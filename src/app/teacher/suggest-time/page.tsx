@@ -17,8 +17,8 @@ export default function SuggestTime() {
     const [session, setSession] = useState<{ email: string; role: string } | null>(null);
     const [loading, setLoading] = useState(true);
     const [workingHours, setWorkingHours] = useState<WorkingHours[]>([]);
-    const [form, setForm] = useState({ dayOfWeek: 'Monday', duration: '00:30:00' });
-    const [suggestedTime, setSuggestedTime] = useState<string | null>(null);
+    const [form, setForm] = useState({ dayOfWeek: '', duration: '00:30:00' });
+    const [availableSlots, setAvailableSlots] = useState<{ [day: string]: string[] }>({});
     const [suggesting, setSuggesting] = useState(false);
     const { showToast } = useToast();
     const router = useRouter();
@@ -59,14 +59,15 @@ export default function SuggestTime() {
     }, [session]);
 
     useEffect(() => {
-        if (workingHours.length > 0 && !workingHours.some(wh => wh.dayOfWeek === form.dayOfWeek)) {
-            setForm(prev => ({ ...prev, dayOfWeek: workingHours[0].dayOfWeek }));
+        if (workingHours.length > 0 && !form.dayOfWeek) {
+            // Don't auto-select a day if user hasn't chosen one yet
+            return;
         }
     }, [workingHours, form.dayOfWeek]);
 
     const handleSuggest = async () => {
         setSuggesting(true);
-        setSuggestedTime(null);
+        setAvailableSlots({});
         try {
             const res = await fetch('/api/teacher/suggest-time', {
                 method: 'POST',
@@ -75,14 +76,21 @@ export default function SuggestTime() {
             });
             const data = await res.json();
             if (res.ok) {
-                setSuggestedTime(convertTo12Hour(data.suggestedTime));
-                showToast('Suggested time found!', 'success');
+                // Convert all slots to 12-hour format
+                const formattedSlots: { [day: string]: string[] } = {};
+                Object.entries(data.availableSlots).forEach(([day, slots]) => {
+                    formattedSlots[day] = (slots as string[]).map(slot => convertTo12Hour(slot));
+                });
+                setAvailableSlots(formattedSlots);
+                
+                const totalSlots = Object.values(formattedSlots).reduce((sum, slots) => sum + slots.length, 0);
+                showToast(`Found ${totalSlots} available time slots across all days!`, 'success');
             } else {
-                showToast(data.error || 'Failed to suggest time', 'error');
+                showToast(data.error || 'Failed to find available times', 'error');
             }
         } catch (error) {
             console.error('Error suggesting time:', error);
-            showToast('Failed to suggest time', 'error');
+            showToast('Failed to find available times', 'error');
         } finally {
             setSuggesting(false);
         }
@@ -125,7 +133,7 @@ export default function SuggestTime() {
                         ) : (
                             <>
                                 <p className="text-foreground/70 mb-6">
-                                    Enter the preferred day and lesson duration to get a suggested start time that fits within your working hours and avoids conflicts with existing students.
+                                    Select a specific day or "Any Day" to see available time slots that fit within your working hours and avoid conflicts with existing students.
                                 </p>
 
                                 <div className="space-y-4">
@@ -136,6 +144,7 @@ export default function SuggestTime() {
                                             onChange={(e) => setForm({ ...form, dayOfWeek: e.target.value })}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         >
+                                            <option value="">Any Day</option>
                                             {workingHours.map(wh => (
                                                 <option key={wh.dayOfWeek} value={wh.dayOfWeek}>{wh.dayOfWeek}</option>
                                             ))}
@@ -160,17 +169,33 @@ export default function SuggestTime() {
                                         size="md"
                                         className="w-full"
                                     >
-                                        {suggesting ? 'Finding Suggestion...' : 'Suggest Time'}
+                                        {suggesting ? 'Finding Available Times...' : 'Show Available Times'}
                                     </Button>
                                 </div>
 
-                                {suggestedTime && (
-                                    <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                                        <h3 className="text-lg font-medium text-green-800 mb-2">Suggested Time</h3>
-                                        <p className="text-green-700 text-xl font-semibold">{suggestedTime}</p>
-                                        <p className="text-green-600 text-sm mt-1">
-                                            This time fits within your working hours and avoids conflicts with existing lessons.
-                                        </p>
+                                {Object.keys(availableSlots).length > 0 && (
+                                    <div className="mt-6 space-y-4">
+                                        {Object.entries(availableSlots).map(([day, slots]) => (
+                                            <div key={day} className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                                                <h3 className="text-lg font-medium text-green-800 mb-3">{day}</h3>
+                                                {slots.length > 0 ? (
+                                                    <>
+                                                        <p className="text-green-700 text-sm mb-4">
+                                                            {slots.length} available {DURATION_OPTIONS.find(d => d.value === form.duration)?.label} time slots:
+                                                        </p>
+                                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                                                            {slots.map((slot, index) => (
+                                                                <div key={index} className="bg-white border border-green-300 rounded-md px-3 py-2 text-center text-green-800 font-medium">
+                                                                    {slot}
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <p className="text-gray-600 text-sm">No available time slots for this day.</p>
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </>

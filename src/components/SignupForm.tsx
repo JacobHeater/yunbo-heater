@@ -6,6 +6,8 @@ import Button from './Button';
 import { useToast } from './ToastContext';
 import { validateStudentData } from '../lib/validation';
 import type { WorkingHours } from '../schema/working-hours';
+import SuggestionModal from './SuggestionModal';
+import ConfirmModal from './ConfirmModal';
 
 interface SignupFormProps {
   buttonText?: string;
@@ -32,6 +34,8 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
   const [workingHours, setWorkingHours] = useState<WorkingHours[]>([]);
   const [minTime, setMinTime] = useState('');
   const [maxTime, setMaxTime] = useState('');
+  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
   // Fetch working hours
   useEffect(() => {
@@ -65,6 +69,24 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
       setMaxTime('');
     }
   }, [formData.lessonDay, workingHours]);
+
+  const handleFillSuggestion = (day: string, time: string) => {
+    setFormData(prev => ({
+      ...prev,
+      lessonDay: prev.lessonDay || day,
+      lessonTime: prev.lessonTime || time
+    }));
+  };
+
+  const handleClearForSuggestion = () => {
+    setFormData(prev => ({
+      ...prev,
+      lessonDay: '',
+      lessonTime: ''
+    }));
+    setShowClearConfirm(false);
+    setShowSuggestionModal(true);
+  };
 
   const inputClass = disabled
     ? 'w-full min-w-0 max-w-full px-3 py-2 border rounded-md bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed opacity-80'
@@ -270,10 +292,28 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
               className={inputClass}
             >
               <option value="">Select duration</option>
-              <option value="01:00:00">60 minutes</option>
               <option value="00:30:00">30 minutes</option>
               <option value="00:45:00">45 minutes</option>
+              <option value="01:00:00">60 minutes</option>
             </select>
+            <button
+              type="button"
+              onClick={() => {
+                if (!formData.duration) {
+                  showToast('Please select a lesson duration first.', 'error');
+                  return;
+                }
+                if (formData.lessonDay && formData.lessonTime) {
+                  setShowClearConfirm(true);
+                } else {
+                  setShowSuggestionModal(true);
+                }
+              }}
+              disabled={disabled}
+              className="mt-1 text-blue-600 hover:text-blue-800 text-sm underline disabled:text-gray-400 disabled:no-underline"
+            >
+              Suggest a Time
+            </button>
           </div>
 
           <div className="min-w-0">
@@ -337,6 +377,26 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
           </Button>
         </div>
       </form>
+
+      <SuggestionModal
+        isOpen={showSuggestionModal}
+        onClose={() => setShowSuggestionModal(false)}
+        onSelect={handleFillSuggestion}
+        duration={formData.duration}
+        dayOfWeek={formData.lessonDay}
+        lessonTime={formData.lessonTime}
+      />
+
+      <ConfirmModal
+        open={showClearConfirm}
+        title="Clear fields for suggestion?"
+        onCancel={() => setShowClearConfirm(false)}
+        onConfirm={handleClearForSuggestion}
+        confirmLabel="Clear and Suggest"
+        confirmVariant="primary"
+      >
+        You already have a day and time selected. To use "Suggest a Time", we need to clear your current selections. Would you like us to clear the day and time fields so we can suggest new options?
+      </ConfirmModal>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import SignupForm from "@/components/SignupForm";
 import LessonPricingDisplay from "@/components/LessonPricingDisplay";
 import WorkingHoursDisplay from "@/components/WorkingHoursDisplay";
-import { FaCalendarAlt, FaBullhorn, FaMusic, FaExclamationTriangle } from 'react-icons/fa';
+import { FaCalendarAlt, FaBullhorn, FaMusic, FaExclamationTriangle, FaSearch } from 'react-icons/fa';
 import { Availability } from '@/app/models/availability';
 import { LessonPrice } from '@/app/models/pricing';
 import type { WorkingHours } from '@/schema/working-hours';
@@ -17,6 +17,10 @@ export default function PianoLessons() {
   const [workingHours, setWorkingHours] = useState<WorkingHours[]>([]);
   const [workingHoursLoading, setWorkingHoursLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [checkingPosition, setCheckingPosition] = useState(false);
+  const [positionEmail, setPositionEmail] = useState('');
+  const [waitingListPosition, setWaitingListPosition] = useState<{ position: number; total: number } | null>(null);
+  const [positionError, setPositionError] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -68,6 +72,35 @@ export default function PianoLessons() {
   const lowSpots = (availabilityData?.spotsAvailable || 0) < 5;
   const spotLabel = availabilityData?.spotsAvailable === 1 ? 'Spot' : 'Spots';
 
+  const checkWaitingListPosition = async () => {
+    if (!positionEmail.trim()) return;
+
+    setCheckingPosition(true);
+    setPositionError(null);
+    setWaitingListPosition(null);
+
+    try {
+      const res = await fetch('/api/piano/waiting-list/position', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ emailAddress: positionEmail.trim() }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        setWaitingListPosition(data);
+      } else {
+        setPositionError(data.error || 'Failed to check position');
+      }
+    } catch (error) {
+      console.error('Error checking position:', error);
+      setPositionError('Failed to check waiting list position');
+    } finally {
+      setCheckingPosition(false);
+    }
+  };
+
   if (!loading && !availabilityData?.available) {
     if (availabilityData?.waitingListAvailable) {
       return (
@@ -89,11 +122,71 @@ export default function PianoLessons() {
                 <p className="text-blue-700">Join our waiting list to be notified when spots become available!</p>
               </div>
 
-              {pricing && <LessonPricingDisplay pricing={pricing} />}
+              <LessonPricingDisplay pricing={pricing} loading={pricingLoading} />
 
               <WorkingHoursDisplay workingHours={workingHours} loading={workingHoursLoading} />
 
               <SignupForm buttonText="Join Waiting List" mode="waitingList" disabled={loading} />
+
+              <div className="mt-10 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 mb-8 max-w-2xl mx-auto">
+                <h3 className="text-lg font-semibold text-blue-800 mb-4 text-center">Check Your Waiting List Position</h3>
+                <p className="text-blue-700 text-sm mb-4 text-center">
+                  Enter your email address to see your current position on the waiting list.
+                </p>
+
+                <div className="flex gap-2 mb-4">
+                  <input
+                    type="email"
+                    value={positionEmail}
+                    onChange={(e) => setPositionEmail(e.target.value)}
+                    placeholder="Enter your email address"
+                    className="flex-1 px-3 py-2 border border-blue-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onKeyPress={(e) => e.key === 'Enter' && checkWaitingListPosition()}
+                  />
+                  <button
+                    onClick={checkWaitingListPosition}
+                    disabled={checkingPosition || !positionEmail.trim()}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {checkingPosition ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Checking...
+                      </>
+                    ) : (
+                      <>
+                        <FaSearch className="text-sm" />
+                        Check
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {positionError && (
+                  <p className="text-red-600 text-sm text-center">{positionError}</p>
+                )}
+
+                {waitingListPosition && (
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-800 mb-2">
+                      You're #{waitingListPosition.position}
+                    </div>
+                    <p className="text-blue-700">
+                      {waitingListPosition.position <= 3 ? (
+                        waitingListPosition.position === 1 ? 
+                          "You're next in line! We'll be in touch very soon when a spot becomes available." :
+                        waitingListPosition.position === 2 ?
+                          "You're second in line. We'll contact you shortly when a spot opens up." :
+                          "You're third in line. We'll reach out soon when a spot becomes available."
+                      ) : (
+                        `Thank you for your patience. You're ${waitingListPosition.position === 4 ? 'fourth' : 
+                        waitingListPosition.position === 5 ? 'fifth' : 
+                        `${waitingListPosition.position}th`} in line out of ${waitingListPosition.total} wonderful musicians on our waiting list. We'll be in touch as soon as a spot opens up.`
+                      )}
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </section>
         </div>
@@ -144,32 +237,9 @@ export default function PianoLessons() {
             </p>
           )}
 
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6 mb-8 max-w-2xl mx-auto">
-            <h3 className="text-xl font-semibold text-foreground mb-4 text-center">Lesson Pricing</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {pricingLoading ? (
-                // Minimal placeholders — show three simple skeleton cells
-                [0, 1, 2].map(i => (
-                  <div key={i} className="text-center">
-                    <div className="h-6 w-20 mx-auto bg-foreground/10 rounded animate-pulse mb-2"></div>
-                    <div className="h-4 w-16 mx-auto bg-foreground/10 rounded animate-pulse"></div>
-                  </div>
-                ))
-              ) : (
-                (pricing || []).map(({ length, cost }: LessonPrice) => {
-                  const displayLength = length === 20 ? 60 : length;
-                  return (
-                    <div key={`${length}-${cost}`} className="text-center">
-                      <div className="text-2xl font-bold text-blue-600">${cost}</div>
-                      <div className="text-sm text-foreground/70">{displayLength} minutes</div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
           <WorkingHoursDisplay workingHours={workingHours} loading={workingHoursLoading} />
+
+          <LessonPricingDisplay pricing={pricing} loading={pricingLoading} />
 
           {!loading && (availabilityData?.spotsAvailable || 0) <= 10 && (
             <div className={`${lowSpots ? 'bg-gradient-to-r from-red-50 to-red-100 border-red-200' : 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200'} rounded-lg p-4 mb-8 max-w-2xl mx-auto`}>
