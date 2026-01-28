@@ -1,26 +1,56 @@
+"use client";
+
+import { useEffect, useState } from 'react';
 import SignupForm from "@/components/SignupForm";
 import LessonPricingDisplay from "@/components/LessonPricingDisplay";
 import { FaCalendarAlt, FaBullhorn, FaMusic, FaExclamationTriangle } from 'react-icons/fa';
 
-export default async function PianoLessons() {
-  let data;
-  let pricing;
-  try {
-    const [availabilityRes, pricingRes] = await Promise.all([
-      fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/piano/availability`),
-      fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/piano/pricing`)
-    ]);
-    data = await availabilityRes.json();
-    pricing = pricingRes.ok ? await pricingRes.json() : null;
-  } catch (error) {
-    console.error('Error fetching data:', error);
+export default function PianoLessons() {
+  const [data, setData] = useState<any | null>(null);
+  const [pricing, setPricing] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const [availabilityRes, pricingRes] = await Promise.all([
+          fetch(`/api/piano/availability`),
+          fetch(`/api/piano/pricing`)
+        ]);
+        if (!mounted) return;
+        const availability = await availabilityRes.json();
+        const pricingData = pricingRes.ok ? await pricingRes.json() : null;
+        setData(availability);
+        setPricing(pricingData);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        if (mounted) setError('Unable to load page data.');
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-[calc(100vh-5rem)] bg-background flex items-center justify-center py-16 px-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-foreground mx-auto mb-4"></div>
+          <p className="text-foreground/70">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !data) {
     return (
       <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center bg-background">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-foreground mb-4">Error</h1>
-          <p className="text-lg text-foreground/80">
-            Unable to load page data. Please try again later.
-          </p>
+          <p className="text-lg text-foreground/80">{error || 'Unable to load page data. Please try again later.'}</p>
         </div>
       </div>
     );

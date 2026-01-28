@@ -1,6 +1,5 @@
 'use client';
 
-import { FaFacebook, FaInstagram, FaYoutube, FaEnvelope } from 'react-icons/fa';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { eventBus } from '@/lib/event-bus';
