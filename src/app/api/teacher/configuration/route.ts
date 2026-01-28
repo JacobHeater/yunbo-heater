@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ConfigurationTable } from '@/schema/configuration';
+import { ConfigurationTable, Configuration } from '@/schema/configuration';
 import { requireApiAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -46,13 +46,13 @@ export async function PUT(request: NextRequest) {
     // If an id is provided prefer id-based upsert/update
     if (id) {
       const existing = await table.readAllAsync();
-      const found = existing.find((r: any) => (r as any).id === id);
+      const found = existing.find((r) => (r as Configuration).id === id) as Configuration | undefined;
       if (!found) {
         return NextResponse.json({ error: 'Configuration id not found' }, { status: 404 });
       }
-      const updated = { ...found, value: String(value), type: resolvedType || found.type };
+      const updated: Configuration = { ...found, value: String(value), type: resolvedType || found.type };
       console.log('Updating by id to:', updated);
-      await table.upsertOneAsync(updated as any);
+      await table.upsertOneAsync(updated);
       console.log('Update successful (by id)');
       return NextResponse.json({ success: true, configuration: updated });
     }
@@ -61,7 +61,7 @@ export async function PUT(request: NextRequest) {
     console.log('Reading existing configs...');
     const existing = await table.readAllAsync();
     console.log('Existing configs:', existing);
-    const found = existing.find((r: any) => r.key === key);
+    const found = existing.find((r) => r.key === key);
     console.log('Found config:', found);
 
     if (!found) {

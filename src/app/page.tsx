@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Button from "@/components/Button";
 import Calligraphy from "@/components/Calligraphy";
+import DynamicDuration from "@/components/DynamicDuration";
 import { FaHome, FaClock, FaCalendarAlt, FaUsers, FaGraduationCap, FaBook, FaMusic, FaList } from 'react-icons/fa';
 import type { Metadata } from 'next';
 
@@ -38,15 +39,15 @@ export default function Home() {
             <div className="md:w-1/2">
               <h2 className="text-3xl font-semibold text-foreground mb-8">About Yunbo</h2>
               <p className="text-lg text-foreground/80 mb-6">
-                Welcome! I'm Yunbo Heater, a dedicated piano teacher passionate about sharing the joy of music.
+                Welcome! I&apos;m Yunbo Heater, a dedicated piano teacher passionate about sharing the joy of music.
                 With decades of experience in piano performance and having been certified in China at the highest skill-level
                 recognized for piano performance, I believe that learning piano opens doors to creativity
                 and self-expression for people of all ages.
               </p>
               <p className="text-lg text-foreground/80">
                 I offer personalized, private, one-on-one lessons in the comfort of my home studio, where each student receives
-                individual attention and progresses at their own pace. Whether you're a complete beginner or looking
-                to refine your skills, I'm here to guide you on your musical journey.
+                individual attention and progresses at their own pace. Whether you&apos;re a complete beginner or looking
+                to refine your skills, I&apos;m here to guide you on your musical journey.
               </p>
             </div>
           </div>
@@ -71,7 +72,7 @@ export default function Home() {
                   <FaClock className="text-xl" />
                   Duration
                 </h3>
-                <p className="text-foreground/70">20 to 45 minute sessions</p>
+                <p className="text-foreground/70"><DynamicDuration /></p>
               </div>
               <div>
                 <h3 className="text-xl font-medium text-foreground mb-2 flex items-center gap-2">
@@ -111,7 +112,7 @@ export default function Home() {
       {/* What You'll Learn Section */}
       <section className="py-16 bg-foreground/5">
         <div className="container">
-          <h2 className="text-3xl font-semibold text-foreground mb-8">What You'll Learn</h2>
+          <h2 className="text-3xl font-semibold text-foreground mb-8">What You&apos;ll Learn</h2>
           <div className="flex flex-col md:flex-row gap-8 justify-between">
             <div className="p-6 bg-background rounded-lg shadow-sm">
               <h3 className="text-xl font-medium text-foreground mb-2 flex items-center gap-2">
@@ -144,20 +145,20 @@ export default function Home() {
           <h2 className="text-3xl font-semibold text-foreground mb-8">Why Choose Yunbo Heater Piano Studio?</h2>
           <div className="text-lg text-foreground/80 my-6">
             As a piano instructor and performer, I hear these words more often than I can count:
-            <blockquote className="border-l-4 border-foreground/20 pl-4 italic my-4">"I wish I would have kept up with my piano studies when I was younger."</blockquote>
-            <blockquote className="border-l-4 border-foreground/20 pl-4 italic my-4">"I wish my parents wouldn't have let me quit when I was younger."</blockquote>
-            Here's the truth: <strong>every week you wait is another week of music you'll never get back.</strong> The best time to start was years ago—the second best time is <em>right now</em>. Whether you want to finally play that song you've always loved, surprise your family at the next holiday gathering, or simply give yourself the gift of music, your future self will thank you for starting today.
+            <blockquote className="border-l-4 border-foreground/20 pl-4 italic my-4">&quot;I wish I would have kept up with my piano studies when I was younger.&quot;</blockquote>
+            <blockquote className="border-l-4 border-foreground/20 pl-4 italic my-4">&quot;I wish my parents wouldn&apos;t have let me quit when I was younger.&quot;</blockquote>
+            Here&apos;s the truth: <strong>every week you wait is another week of music you&apos;ll never get back.</strong> The best time to start was years ago—the second best time is <em>right now</em>. Whether you want to finally play that song you&apos;ve always loved, surprise your family at the next holiday gathering, or simply give yourself the gift of music, your future self will thank you for starting today.
           </div>
-          <ul className="list-disc list-inside space-y-4 text-foreground/80">
-            <li><strong>Experienced & passionate instruction</strong> — I'm personally invested in helping you succeed, not just go through the motions.</li>
-            <li><strong>A lesson plan built around YOU</strong> — Your goals, your pace, your favorite music.</li>
-            <li><strong>A cozy, welcoming studio</strong> — Learn in a space that feels comfortable, not intimidating.</li>
-            <li><strong>Flexible scheduling</strong> — Because life is busy, but your dreams shouldn't have to wait.</li>
-            <li><strong>Confidence that lasts a lifetime</strong> — Music isn't just a skill; it's a joy you carry with you forever.</li>
-          </ul>
-          <p className="text-lg text-foreground/80 mt-6">
-            <strong>Spots fill up quickly.</strong> Don't let another month slip by wondering "what if?" Reach out today and let's get you started on your musical journey.
-          </p>
+            <ul className="list-disc list-inside space-y-4 text-foreground/80">
+              <li><strong>Experienced &amp; passionate instruction</strong> — I&apos;m personally invested in helping you succeed, not just go through the motions.</li>
+              <li><strong>A lesson plan built around YOU</strong> — Your goals, your pace, your favorite music.</li>
+              <li><strong>A cozy, welcoming studio</strong> — Learn in a space that feels comfortable, not intimidating.</li>
+              <li><strong>Flexible scheduling</strong> — Because life is busy, but your dreams shouldn&apos;t have to wait.</li>
+              <li><strong>Confidence that lasts a lifetime</strong> — Music isn&apos;t just a skill; it&apos;s a joy you carry with you forever.</li>
+            </ul>
+            <p className="text-lg text-foreground/80 mt-6">
+              <strong>Spots fill up quickly.</strong> Don&apos;t let another month slip by wondering &quot;what if?&quot; Reach out today and let&apos;s get you started on your musical journey.
+            </p>
         </div>
       </section>
 

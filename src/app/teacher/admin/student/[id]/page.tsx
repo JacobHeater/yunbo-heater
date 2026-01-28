@@ -436,7 +436,7 @@ export default function StudentDetailPage() {
                           className="border rounded px-2 py-1"
                         >
                           <option value="">Select duration</option>
-                          <option value="00:20:00">20 minutes</option>
+                          <option value="01:00:00">60 minutes</option>
                           <option value="00:30:00">30 minutes</option>
                           <option value="00:45:00">45 minutes</option>
                         </select>

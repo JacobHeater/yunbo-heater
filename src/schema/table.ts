@@ -56,20 +56,20 @@ export abstract class GoogleSheetsTableBase<T> implements GoogleSheetsTable<T> {
    */
   protected getIdColumnName(): string {
     // direct 'id' key on columns
-    const colsAny = this.columns as any;
-    if (colsAny.id && colsAny.id.name) return colsAny.id.name;
+    const colsRecord = this.columns as unknown as Record<string, ColumnDefinition>;
+    if (colsRecord['id'] && colsRecord['id'].name) return colsRecord['id'].name;
 
     // case-insensitive key match
     for (const key of Object.keys(this.columns)) {
       if (key.toLowerCase() === 'id') {
-        const def = (this.columns as any)[key];
+        const def = colsRecord[key];
         if (def && def.name) return def.name;
       }
     }
 
     // fallback: check ColumnDefinition.name values for an 'id' header
     for (const key of Object.keys(this.columns)) {
-      const def = (this.columns as any)[key];
+      const def = colsRecord[key];
       if (def && def.name && typeof def.name === 'string' && def.name.toLowerCase() === 'id') {
         return def.name;
       }
@@ -83,20 +83,20 @@ export abstract class GoogleSheetsTableBase<T> implements GoogleSheetsTable<T> {
    * Returns null when the schema does not define that key.
    */
   protected getColumnNameForKey(key: string): string | null {
-    const colsAny = this.columns as any;
-    if (colsAny[key] && colsAny[key].name) return colsAny[key].name;
+    const colsRecord2 = this.columns as unknown as Record<string, ColumnDefinition>;
+    if (colsRecord2[key] && colsRecord2[key].name) return colsRecord2[key].name;
 
     // try case-insensitive key match
     for (const k of Object.keys(this.columns)) {
       if (k.toLowerCase() === key.toLowerCase()) {
-        const def = (this.columns as any)[k];
+        const def = colsRecord2[k];
         if (def && def.name) return def.name;
       }
     }
 
     // try matching by ColumnDefinition.name value (case-insensitive)
     for (const k of Object.keys(this.columns)) {
-      const def = (this.columns as any)[k];
+      const def = colsRecord2[k];
       if (def && def.name && typeof def.name === 'string' && def.name.toLowerCase() === key.toLowerCase()) {
         return def.name;
       }
@@ -109,7 +109,7 @@ export abstract class GoogleSheetsTableBase<T> implements GoogleSheetsTable<T> {
     const row: string[] = [];
     for (const key in this.columns) {
       const column = this.columns[key];
-      const value = (entry as any)[key];
+      const value = (entry as unknown as Record<string, unknown>)[key] as string;
       const formatted = this.writeFormatValue(value, column);
       row.push(formatted);
     }
@@ -173,8 +173,8 @@ export abstract class GoogleSheetsTableBase<T> implements GoogleSheetsTable<T> {
 
   async upsertOneAsync(entry: T): Promise<void> {
     // Ensure the entry has an id; generate one for new records
-    if (!(entry as any).id) {
-      (entry as any).id = uuidv4();
+    if (!(entry as unknown as Record<string, unknown>).id) {
+      (entry as unknown as Record<string, unknown>).id = uuidv4();
     }
     // Read all rows to find existing
     const response = await this.sheets.spreadsheets.values.get({
@@ -189,7 +189,7 @@ export abstract class GoogleSheetsTableBase<T> implements GoogleSheetsTable<T> {
     const idIndex = header.indexOf(idColumnName);
     if (idIndex === -1) throw new Error(`${idColumnName} column not found`);
     const existingRowIndex = dataRows.findIndex(
-      (row) => row[idIndex] === (entry as any).id,
+      (row) => row[idIndex] === (entry as unknown as Record<string, unknown>).id,
     );
 
     // Build a map of column name -> formatted value based on our schema columns
@@ -229,7 +229,7 @@ export abstract class GoogleSheetsTableBase<T> implements GoogleSheetsTable<T> {
         targetRow[updatedAtIndex] = today;
       }
       // Ensure id column is populated
-      targetRow[idIndex] = (entry as any).id;
+      targetRow[idIndex] = (entry as unknown as Record<string, unknown>).id as string;
 
       const range = `${this.name}!A${existingRowIndex + 2}:Z${existingRowIndex + 2}`;
       await this.sheets.spreadsheets.values.update({
@@ -242,7 +242,7 @@ export abstract class GoogleSheetsTableBase<T> implements GoogleSheetsTable<T> {
       // Append new row: set Created At to today if column exists; do NOT set Updated At on insert
       if (createdAtIndex !== -1) targetRow[createdAtIndex] = today;
       // Ensure id column is populated
-      targetRow[idIndex] = (entry as any).id;
+      targetRow[idIndex] = (entry as unknown as Record<string, unknown>).id as string;
 
       await this.sheets.spreadsheets.values.append({
         spreadsheetId: this.spreadsheetId,
@@ -312,14 +312,14 @@ export abstract class GoogleSheetsTableBase<T> implements GoogleSheetsTable<T> {
     return `${hour12}:${minutes} ${ampm}`;
   }
 
-  protected readFormatValue(value: string, column: ColumnDefinition): any {
+  protected readFormatValue(value: string, column: ColumnDefinition): unknown {
     if (!column.readFormat) return value;
 
     const format = column.readFormat;
 
     // Parse format strings and apply appropriate formatting
     if (format.includes('AM/PM') || format.includes('hh:mm')) {
-      return this.convertTo12Hour(value);
+      return this.convertTo24Hour(value);
     } else if (format.startsWith('$')) {
       return `$${parseFloat(value).toFixed(2)}`;
     } else if (format.includes('/')) {
@@ -345,19 +345,19 @@ export abstract class GoogleSheetsTableBase<T> implements GoogleSheetsTable<T> {
   }
 
   protected parseRowFromRead(row: string[], header: string[]): T {
-    const entry = {} as any;
+    const entry: Record<string, unknown> = {};
     const keys = Object.keys(this.columns) as Array<keyof T>;
     for (const key of keys) {
       const column = this.columns[key];
       const colIndex = header.indexOf(column.name);
       const value = colIndex >= 0 ? row[colIndex] || '' : '';
       if (value === '' && column.nullable) {
-        entry[key] = null;
+        entry[key as string] = null;
       } else {
         entry[key as string] = this.readFormatValue(value, column);
       }
     }
-    return entry;
+    return entry as T;
   }
 
   async readAllAsync(): Promise<T[]> {
@@ -374,7 +374,7 @@ export abstract class GoogleSheetsTableBase<T> implements GoogleSheetsTable<T> {
 
   async readOneAsync(id: string): Promise<T | null> {
     const all = await this.readAllAsync();
-    return all.find(item => (item as any).id === id) || null;
+    return all.find(item => (item as unknown as Record<string, unknown>).id === id) || null;
   }
 }
 

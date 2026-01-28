@@ -2,6 +2,7 @@ import { StudentRollTable } from "../../../../schema/student-roll";
 import { WaitingListTable } from "../../../../schema/waiting-list";
 import { SignupsTable } from "../../../../schema/signups";
 import { ConfigurationTable } from "../../../../schema/configuration";
+import { WorkingHoursTable } from "../../../../schema/working-hours";
 import { StatusCode, StatusMessageStatusTextMap } from "../../../../status/status-codes";
 import { validateStudentData } from "../../../../lib/validation";
 
@@ -22,6 +23,18 @@ export async function POST(request: Request) {
       }
       
       return Response.json({ error: validation.message, status: statusCode }, { status: 400 });
+    }
+
+    // Check working hours
+    const workingHoursTable = new WorkingHoursTable();
+    const workingHours = await workingHoursTable.readAllAsync();
+    const dayHours = workingHours.find(wh => wh.dayOfWeek === body.lessonDay);
+    if (!dayHours) {
+      return Response.json({ error: 'No working hours set for this day', status: StatusCode.InvalidLessonTime }, { status: 400 });
+    }
+    const lessonTime = body.lessonTime; // HH:MM
+    if (lessonTime < dayHours.startTime || lessonTime > dayHours.endTime) {
+      return Response.json({ error: 'Lesson time is outside working hours', status: StatusCode.InvalidLessonTime }, { status: 400 });
     }
 
     const studentRoll = new StudentRollTable();

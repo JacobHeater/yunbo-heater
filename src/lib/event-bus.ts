@@ -1,4 +1,4 @@
-type EventCallback = (...args: any[]) => void;
+type EventCallback = (...args: unknown[]) => void;
 
 class EventBus {
   private events: Map<string, EventCallback[]> = new Map();
@@ -20,7 +20,7 @@ class EventBus {
     }
   }
 
-  emit(event: string, ...args: any[]): void {
+  emit(event: string, ...args: unknown[]): void {
     const callbacks = this.events.get(event);
     if (callbacks) {
       callbacks.forEach(callback => callback(...args));

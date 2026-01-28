@@ -5,6 +5,7 @@ import { StudentEntry } from '../schema/student-entry';
 import Button from './Button';
 import { useToast } from './ToastContext';
 import { validateStudentData } from '../lib/validation';
+import type { WorkingHours } from '../schema/working-hours';
 
 interface SignupFormProps {
   buttonText?: string;
@@ -28,6 +29,42 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useToast();
+  const [workingHours, setWorkingHours] = useState<WorkingHours[]>([]);
+  const [minTime, setMinTime] = useState('');
+  const [maxTime, setMaxTime] = useState('');
+
+  // Fetch working hours
+  useEffect(() => {
+    const fetchWorkingHours = async () => {
+      try {
+        const res = await fetch('/api/teacher/working-hours');
+        if (res.ok) {
+          const data = await res.json();
+          setWorkingHours(data.workingHours || []);
+        }
+      } catch (error) {
+        console.error('Error fetching working hours:', error);
+      }
+    };
+    fetchWorkingHours();
+  }, []);
+
+  // Update min/max time when lessonDay changes
+  useEffect(() => {
+    if (formData.lessonDay && workingHours.length > 0) {
+      const dayHours = workingHours.find(wh => wh.dayOfWeek === formData.lessonDay);
+      if (dayHours) {
+        setMinTime(dayHours.startTime);
+        setMaxTime(dayHours.endTime);
+      } else {
+        setMinTime('');
+        setMaxTime('');
+      }
+    } else {
+      setMinTime('');
+      setMaxTime('');
+    }
+  }, [formData.lessonDay, workingHours]);
 
   const inputClass = disabled
     ? 'w-full min-w-0 max-w-full px-3 py-2 border rounded-md bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed opacity-80'
@@ -187,13 +224,21 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
               className={inputClass}
             >
               <option value="">Select a day</option>
-              <option value="Monday">Monday</option>
-              <option value="Tuesday">Tuesday</option>
-              <option value="Wednesday">Wednesday</option>
-              <option value="Thursday">Thursday</option>
-              <option value="Friday">Friday</option>
-              <option value="Saturday">Saturday</option>
-              <option value="Sunday">Sunday</option>
+              {mode === 'manual' ? (
+                <>
+                  <option value="Monday">Monday</option>
+                  <option value="Tuesday">Tuesday</option>
+                  <option value="Wednesday">Wednesday</option>
+                  <option value="Thursday">Thursday</option>
+                  <option value="Friday">Friday</option>
+                  <option value="Saturday">Saturday</option>
+                  <option value="Sunday">Sunday</option>
+                </>
+              ) : (
+                workingHours.map(wh => (
+                  <option key={wh.dayOfWeek} value={wh.dayOfWeek}>{wh.dayOfWeek}</option>
+                ))
+              )}
             </select>
           </div>
 
@@ -207,6 +252,8 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
               value={formData.lessonTime}
               onChange={(e) => setFormData({ ...formData, lessonTime: e.target.value })}
               disabled={disabled}
+              min={mode === 'manual' ? undefined : minTime}
+              max={mode === 'manual' ? undefined : maxTime}
               className={inputClass}
             />
           </div>
@@ -223,7 +270,7 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
               className={inputClass}
             >
               <option value="">Select duration</option>
-              <option value="00:20:00">20 minutes</option>
+              <option value="01:00:00">60 minutes</option>
               <option value="00:30:00">30 minutes</option>
               <option value="00:45:00">45 minutes</option>
             </select>

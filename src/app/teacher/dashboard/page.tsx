@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from 'react';
+import type { WorkingHours } from '@/schema/working-hours';
 import { useRouter } from 'next/navigation';
 import { FaChevronRight } from 'react-icons/fa';
 import { eventBus } from '@/lib/event-bus';
@@ -10,6 +11,7 @@ export default function TeacherDashboard() {
   const [session, setSession] = useState<{ email: string; role: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const [workingHours, setWorkingHours] = useState<WorkingHours[]>([]);
 
   useEffect(() => {
     const checkSession = async () => {
@@ -21,7 +23,7 @@ export default function TeacherDashboard() {
         } else {
           router.push('/teacher/login');
         }
-      } catch (error) {
+      } catch {
         router.push('/teacher/login');
       } finally {
         setLoading(false);
@@ -30,6 +32,47 @@ export default function TeacherDashboard() {
 
     checkSession();
   }, [router]);
+
+  useEffect(() => {
+    if (!session) return;
+    let mounted = true;
+
+    const dayOrder = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+
+    const normalizeDay = (s?: string) => {
+      if (!s) return s || '';
+      const low = s.toLowerCase();
+      if (low.startsWith('mon')) return 'Monday';
+      if (low.startsWith('tue')) return 'Tuesday';
+      if (low.startsWith('wed')) return 'Wednesday';
+      if (low.startsWith('thu')) return 'Thursday';
+      if (low.startsWith('fri')) return 'Friday';
+      if (low.startsWith('sat')) return 'Saturday';
+      if (low.startsWith('sun')) return 'Sunday';
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    };
+
+    const fetchHours = async () => {
+      try {
+        const res = await fetch('/api/teacher/working-hours');
+        if (!res.ok) return;
+        const data = await res.json();
+        const hours: WorkingHours[] = data.workingHours || [];
+        const sorted = hours.slice().sort((a, b) => {
+          const aDay = dayOrder.indexOf(normalizeDay(a.dayOfWeek));
+          const bDay = dayOrder.indexOf(normalizeDay(b.dayOfWeek));
+          return (aDay === -1 ? 7 : aDay) - (bDay === -1 ? 7 : bDay);
+        });
+        if (mounted) setWorkingHours(sorted);
+      } catch (err) {
+        console.error('Failed to fetch working hours preview', err);
+      }
+    };
+
+    fetchHours();
+
+    return () => { mounted = false; };
+  }, [session]);
 
   const handleLogout = async () => {
     await fetch('/api/teacher/logout', { method: 'POST' });
@@ -113,9 +156,47 @@ export default function TeacherDashboard() {
                 Manage Configuration <FaChevronRight className="w-4 h-4" />
               </a>
             </div>
+
+            <div className="bg-gradient-to-br from-white to-blue-50 border border-foreground/20 shadow-sm rounded-lg p-6">
+              <h2 className="text-xl font-semibold text-foreground mb-4">Working Hours</h2>
+              <p className="text-foreground/70 mb-3">Set the weekly availability for lessons</p>
+              <div className="mb-3 text-sm text-foreground/80">
+                {workingHours.length > 0 ? (
+                  <div className="space-y-1">
+                    {workingHours.map((w) => (
+                      <div key={w.id} className="flex justify-between items-center">
+                        <div className="font-medium text-foreground/90">{w.dayOfWeek}</div>
+                        <div className="text-foreground/70">{w.startTime} — {w.endTime}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-foreground/60">No working hours configured.</div>
+                )}
+              </div>
+              <a
+                href="/teacher/admin/working-hours"
+                className="inline-flex items-center gap-2 text-foreground hover:text-foreground/80 font-medium"
+              >
+                Manage Working Hours <FaChevronRight className="w-4 h-4" />
+              </a>
+            </div>
+
+            <div className="bg-gradient-to-br from-white to-blue-50 border border-foreground/20 shadow-sm rounded-lg p-6">
+              <h2 className="text-xl font-semibold text-foreground mb-4">Lesson Time Suggestion</h2>
+              <p className="text-foreground/70 mb-4">Get suggested times for new students based on your schedule</p>
+              <a
+                href="/teacher/suggest-time"
+                className="inline-flex items-center gap-2 text-foreground hover:text-foreground/80 font-medium"
+              >
+                Suggest Time <FaChevronRight className="w-4 h-4" />
+              </a>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+// working-hours fetch moved into component

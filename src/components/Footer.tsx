@@ -14,7 +14,7 @@ export default function Footer() {
       try {
         const res = await fetch('/api/teacher/session');
         setIsLoggedIn(res.ok);
-      } catch (error) {
+      } catch {
         setIsLoggedIn(false);
       } finally {
         setLoading(false);
@@ -69,18 +69,18 @@ export default function Footer() {
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 justify-center md:justify-end w-full md:w-auto">
             {isLoggedIn ? (
               <>
                 <a
                   href="/teacher/dashboard"
-                  className="text-background/70 hover:text-background transition-colors text-sm font-medium ml-4"
+                  className="text-background/70 hover:text-background transition-colors text-sm font-medium md:ml-4"
                 >
                   Teacher Dashboard
                 </a>
                 <button
                   onClick={handleLogout}
-                  className="text-background/70 hover:text-background transition-colors text-sm font-medium ml-4"
+                  className="text-background/70 hover:text-background transition-colors text-sm font-medium md:ml-4"
                 >
                   Logout
                 </button>
@@ -88,7 +88,7 @@ export default function Footer() {
             ) : (
               <a
                 href="/teacher/login"
-                className="text-background/70 hover:text-background transition-colors text-sm font-medium ml-4"
+                className="text-background/70 hover:text-background transition-colors text-sm font-medium md:ml-4"
               >
                 Teacher Login
               </a>

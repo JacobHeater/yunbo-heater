@@ -52,10 +52,10 @@ export class ConfigurationTable extends GoogleSheetsTableBase<Configuration> {
 
     // Try to read the existing entry via readAllAsync to pick up the id
     const existingEntries = await this.readAllAsync();
-    const found = existingEntries.find((r) => r.key === key) as any;
+    const found = existingEntries.find((r) => r.key === key) as Configuration | undefined;
 
     // Build an entry object respecting columns order, preserving id when possible
-    const entry: any = {};
+    const entry: Partial<Configuration> = {};
     entry.id = found?.id || undefined;
     entry.key = key;
     entry.value = value;
@@ -69,5 +69,31 @@ export class ConfigurationTable extends GoogleSheetsTableBase<Configuration> {
       valueInputOption: "RAW",
       requestBody: { values: [formattedRow] },
     });
+  }
+}
+
+export class ConfigurationManager {
+  private table: ConfigurationTable = new ConfigurationTable();
+
+  async getConfigurationMap(): Promise<Record<string, unknown>> {
+    const configRows = await this.table.readAllAsync();
+    const config: Record<string, unknown> = {};
+    configRows.forEach((row) => {
+      const key = row.key;
+      const value = row.value;
+      switch (row.type) {
+        case "number":
+          config[key] = Number.parseInt(value);
+          break;
+        case "decimal":
+          config[key] = Number.parseFloat(value);
+          break;
+        case "string":
+        default:
+          config[key] = value;
+          break;
+      }
+    });
+    return config;
   }
 }

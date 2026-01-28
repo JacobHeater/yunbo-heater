@@ -16,13 +16,17 @@ export async function getSession() {
 
     if (JWT_MODE) {
       try {
-        const payload: any = jwt.verify(sessionToken, SESSION_SECRET);
-        pruneExpiredJtis();
-        const revokedBefore = revokedUsers.get(payload.email) || 0;
-        if (payload.iat && payload.iat <= revokedBefore) return null;
-        if (payload.jti && revokedJtis.has(payload.jti)) return null;
-        return { email: payload.email, role: payload.role };
-      } catch (err) {
+        const verified = jwt.verify(sessionToken, SESSION_SECRET) as unknown;
+        if (typeof verified === 'object' && verified !== null) {
+          const payload = verified as Record<string, unknown>;
+          pruneExpiredJtis();
+          const revokedBefore = revokedUsers.get(payload.email as string) || 0;
+          if (typeof payload.iat === 'number' && payload.iat <= revokedBefore) return null;
+          if (typeof payload.jti === 'string' && revokedJtis.has(payload.jti)) return null;
+          return { email: payload.email as string, role: payload.role as string };
+        }
+        return null;
+      } catch {
         return null;
       }
     }
@@ -63,7 +67,7 @@ export function createSession(email: string, role: string) {
 
   const sessionId = uuidv4();
   const sessionData = { email, role, expires: Date.now() + 24 * 60 * 60 * 1000 };
-  inMemorySessions.set(sessionId, sessionData as any);
+  inMemorySessions.set(sessionId, sessionData);
   return sessionId;
 }
 
@@ -87,18 +91,21 @@ export async function destroySession() {
   const sessionToken = cookieStore.get('session')?.value;
   if (!sessionToken) return;
 
-  if (JWT_MODE) {
-    try {
-      const payload: any = jwt.verify(sessionToken, SESSION_SECRET);
-      if (payload.jti && payload.exp) {
-        revokedJtis.set(payload.jti, payload.exp);
-        pruneExpiredJtis();
+    if (JWT_MODE) {
+      try {
+        const verified = jwt.verify(sessionToken, SESSION_SECRET) as unknown;
+        if (typeof verified === 'object' && verified !== null) {
+          const payload = verified as Record<string, unknown>;
+          if (typeof payload.jti === 'string' && typeof payload.exp === 'number') {
+            revokedJtis.set(payload.jti, payload.exp);
+            pruneExpiredJtis();
+          }
+        }
+      } catch {
+        // ignore
       }
-    } catch (err) {
-      // ignore
+      return;
     }
-    return;
-  }
 
   // in-memory
   if (inMemorySessions.has(sessionToken)) inMemorySessions.delete(sessionToken);

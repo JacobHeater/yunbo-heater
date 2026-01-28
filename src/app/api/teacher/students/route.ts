@@ -3,7 +3,6 @@ import { StudentRollTable } from '@/schema/student-roll';
 import { WaitingListTable } from '@/schema/waiting-list';
 import { SignupsTable } from '@/schema/signups';
 import { StudentEntry } from '@/schema/student-entry';
-import { StatusCode } from '@/status/status-codes';
 import { requireApiAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {

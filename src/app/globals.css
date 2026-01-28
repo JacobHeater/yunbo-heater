@@ -23,14 +23,14 @@ body {
   max-width: 72rem; /* matches Tailwind's max-w-6xl */
   margin-left: auto;
   margin-right: auto;
-  padding-left: 4rem; /* matches px-16 */
-  padding-right: 4rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
 }
 
-@media (max-width: 640px) {
+@media (min-width: 1024px) {
   .container {
-    padding-left: 1rem;
-    padding-right: 1rem;
+    padding-left: 4rem; /* px-16 on large screens */
+    padding-right: 4rem;
   }
 }
 
@@ -73,4 +73,15 @@ input[type="time"]::-webkit-clear-button,
 input[type="time"]::-webkit-inner-spin-button {
   display: none;
   -webkit-appearance: none;
+}
+
+/* Prevent site-wide horizontal overflow and ensure media/tables scale */
+img, video, canvas, iframe, table, pre {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Allow long words/values to wrap in most places to avoid overflow */
+body, p, span, div, td, th, li {
+  overflow-wrap: anywhere;
 }

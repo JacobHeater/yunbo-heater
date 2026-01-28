@@ -1,11 +1,12 @@
 import { PricingTable } from "@/schema/pricing";
 import { calculateLessonPricing } from "@/lib/student-utils";
+import { LessonPrice } from "@/app/models/pricing";
 
 export async function GET() {
   try {
     const pricingTable = new PricingTable();
     const rawPricing = await pricingTable.readAllAsync();
-    let lessonPricing = null;
+    let lessonPricing: LessonPrice[] | null = null;
 
     // Use data from Google Sheets if available
     let ratePerMinute: number | null = null;
@@ -15,7 +16,7 @@ export async function GET() {
       const asNumber = typeof raw === 'number' ? raw : parseFloat(String(raw).replace(/[$,]/g, ''));
       if (Number.isFinite(asNumber)) {
         ratePerMinute = asNumber;
-        lessonPricing = calculateLessonPricing(ratePerMinute, [20, 30, 45]);
+        lessonPricing = calculateLessonPricing(ratePerMinute, [30, 45, 60]);
       } else {
         console.warn('pricing: could not parse ratePerMinute from sheet:', raw);
       }

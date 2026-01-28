@@ -1,52 +1,37 @@
 import { StatusCode } from "@/status/status-codes";
 import { StudentRollTable } from "../../../../schema/student-roll";
 import { WaitingListTable } from "../../../../schema/waiting-list";
-import { ConfigurationTable } from "../../../../schema/configuration";
+import { ConfigurationManager } from "../../../../schema/configuration";
+import { Availability } from "@/app/models/availability";
 
 export async function GET() {
   try {
     const studentRoll = new StudentRollTable();
     const waitingListTable = new WaitingListTable();
-    const configTable = new ConfigurationTable();
+    const configManager = new ConfigurationManager();
 
     const students = await studentRoll.readAllAsync();
     const waitingList = await waitingListTable.readAllAsync();
-    const configRows = await configTable.readAllAsync();
+    const config = await configManager.getConfigurationMap();
+    
+    const maxStudents = Number(config.maxStudents) || 0;
+    const maxWaitingListSize = Number(config.maxWaitingListSize) || 0;
+    const spotsAvailable = Math.max(0, maxStudents - students.length);
+    const waitingListSpotsAvailable = Math.max(0, maxWaitingListSize - waitingList.length);
 
-    const config: Record<string, any> = {};
-    configRows.forEach((row) => {
-      const key = row.key;
-      const value = row.value;
-      switch (row.type) {
-        case "number":
-          config[key] = parseInt(value);
-          break;
-        case "decimal":
-          config[key] = parseFloat(value);
-          break;
-        case "string":
-        default:
-          config[key] = value;
-          break;
-      }
-    });
-
-    const spotsAvailable = Math.max(0, config.maxStudents - students.length);
-    const waitingListSpotsAvailable = Math.max(0, config.maxWaitingListSize - waitingList.length);
-
-    if (students.length >= config.maxStudents) {
+    if (students.length >= maxStudents) {
       return Response.json({ 
         available: false,
         waitingListAvailable: waitingListSpotsAvailable > 0,
         waitingListSpotsAvailable
-      });
+      } as Availability);
     }
     return Response.json({
       available: true,
       spotsAvailable,
       waitingListAvailable: waitingListSpotsAvailable > 0,
       waitingListSpotsAvailable,
-    });
+    } as Availability);
   } catch (error) {
     console.error("Error fetching from Google Sheets:", error);
     return Response.json(

@@ -52,7 +52,7 @@ export default function StudentManagement() {
         const data = await signupsRes.json();
         setSignups(data.students || []);
       }
-    } catch (err) {
+    } catch {
       setError('Failed to load data');
     }
   };
@@ -68,7 +68,7 @@ export default function StudentManagement() {
         }
 
         await fetchData();
-      } catch (err) {
+      } catch {
         setError('An error occurred');
       } finally {
         setLoading(false);
@@ -151,7 +151,7 @@ export default function StudentManagement() {
       } else {
         showToast('Failed to promote student', 'error');
       }
-    } catch (err) {
+    } catch {
       showToast('An error occurred during promotion', 'error');
     } finally {
       setPromoting(prev => {
@@ -200,7 +200,7 @@ export default function StudentManagement() {
         const err = await postRes.json().catch(() => ({}));
         showToast(err?.error || 'Failed to add to target list', 'error');
       }
-    } catch (err) {
+    } catch {
       showToast('An error occurred during move', 'error');
     } finally {
       setMoving(prev => {
@@ -227,7 +227,7 @@ export default function StudentManagement() {
       } else {
         showToast('Failed to delete student', 'error');
       }
-    } catch (err) {
+    } catch {
       showToast('An error occurred during deletion', 'error');
     } finally {
       setDeleting(prev => {

@@ -1,6 +1,7 @@
 import { format, parse, parseISO } from 'date-fns';
 import { convertReadTimeSpanToWriteFormat } from '../schema/formatting';
 import { formatDuration, formatTime, convertTo24Hour } from './time-utils';
+import { LessonPrice } from '@/app/models/pricing';
 
 export const calculateLessonCost = (minutelyRate: string, duration: string): string => {
   const rate = parseFloat(minutelyRate.replace(/[$,]/g, ''));
@@ -102,7 +103,7 @@ export const writeFormatValue = (value: string, column: { dataType: string; writ
   }
 };
 
-export function calculateLessonPricing(ratePerMinute: string | number, lengths: number[]): { length: number; cost: string }[] {
+export function calculateLessonPricing(ratePerMinute: string | number, lengths: number[]): LessonPrice[] {
   const rate = typeof ratePerMinute === 'string' ? parseFloat(ratePerMinute.replace(/[$,]/g, '')) : ratePerMinute;
   return lengths.map(length => ({
     length,
