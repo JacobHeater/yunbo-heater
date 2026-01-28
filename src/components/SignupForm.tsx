@@ -30,8 +30,8 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
   const { showToast } = useToast();
 
   const inputClass = disabled
-    ? 'w-full px-3 py-2 border rounded-md bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed opacity-80'
-    : 'w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500';
+    ? 'w-full min-w-0 max-w-full px-3 py-2 border rounded-md bg-gray-100 text-gray-500 border-gray-200 cursor-not-allowed opacity-80'
+    : 'w-full min-w-0 max-w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500';
 
   // Fetch default rate for signup, waiting list, and manual modes
   useEffect(() => {
@@ -110,10 +110,10 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div>
+    <div className="max-w-2xl mx-auto px-4">
+      <form onSubmit={handleSubmit} className="space-y-8 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 min-w-0">
+          <div className="min-w-0">
             <label htmlFor="studentName" className="block text-sm font-medium text-foreground mb-2">
               Student Name *
             </label>
@@ -128,7 +128,7 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
             />
           </div>
 
-          <div>
+          <div className="min-w-0">
             <label htmlFor="phoneNumber" className="block text-sm font-medium text-foreground mb-2">
               Phone Number *
             </label>
@@ -143,7 +143,7 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
             />
           </div>
 
-          <div>
+          <div className="min-w-0">
             <label htmlFor="emailAddress" className="block text-sm font-medium text-foreground mb-2">
               Email Address *
             </label>
@@ -158,7 +158,7 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
             />
           </div>
 
-          <div>
+          <div className="min-w-0">
             <label htmlFor="age" className="block text-sm font-medium text-foreground mb-2">
               Age *
             </label>
@@ -175,7 +175,7 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
             />
           </div>
 
-          <div>
+          <div className="min-w-0">
             <label htmlFor="lessonDay" className="block text-sm font-medium text-foreground mb-2">
               Preferred Lesson Day *
             </label>
@@ -197,7 +197,7 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
             </select>
           </div>
 
-          <div>
+          <div className="min-w-0">
             <label htmlFor="lessonTime" className="block text-sm font-medium text-foreground mb-2">
               Preferred Lesson Time *
             </label>
@@ -211,7 +211,7 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
             />
           </div>
 
-          <div>
+          <div className="min-w-0">
             <label htmlFor="duration" className="block text-sm font-medium text-foreground mb-2">
               Lesson Duration *
             </label>
@@ -229,7 +229,7 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
             </select>
           </div>
 
-          <div>
+          <div className="min-w-0">
             <label htmlFor="skillLevel" className="block text-sm font-medium text-foreground mb-2">
               Skill Level *
             </label>
@@ -247,7 +247,7 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
             </select>
           </div>
 
-          <div>
+          <div className="min-w-0">
             <label htmlFor="startDate" className="block text-sm font-medium text-foreground mb-2">
               Preferred Start Date *
             </label>
@@ -262,7 +262,7 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
           </div>
 
           {mode === 'manual' && (
-            <div>
+            <div className="min-w-0">
               <label htmlFor="minutelyRate" className="block text-sm font-medium text-foreground mb-2">
                 Minutely Rate *
               </label>
