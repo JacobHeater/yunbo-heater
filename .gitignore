@@ -45,3 +45,4 @@ next-env.d.ts
 
 *yunbo*.json
 test-results
+playwright-report
