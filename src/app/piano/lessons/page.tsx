@@ -117,9 +117,11 @@ export default function PianoLessons() {
               <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-8 max-w-2xl mx-auto">
                 <div className="flex items-center justify-center mb-2">
                   <FaCalendarAlt className="text-blue-600 text-2xl mr-2" />
-                  <span className="font-semibold text-blue-800">Waiting List Available</span>
+                  <span className="font-semibold text-blue-800">
+                    {availabilityData?.waitingListSpotsAvailable === 1 ? '1 Waiting List Spot' : `${availabilityData?.waitingListSpotsAvailable} Waiting List Spots`} Available
+                  </span>
                 </div>
-                <p className="text-blue-700">Join our waiting list to be notified when spots become available!</p>
+                <p className="text-blue-700">Join our waiting list to be notified when lesson spots become available!</p>
               </div>
 
               <LessonPricingDisplay pricing={pricing} loading={pricingLoading} />
