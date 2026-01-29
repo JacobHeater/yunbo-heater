@@ -171,7 +171,7 @@ export default function PianoLessons() {
                 {waitingListPosition && (
                   <div className="text-center">
                     <div className="text-2xl font-bold text-blue-800 mb-2">
-                      You're #{waitingListPosition.position}
+                      You&apos;re #{waitingListPosition.position}
                     </div>
                     <p className="text-blue-700">
                       {waitingListPosition.position <= 3 ? (

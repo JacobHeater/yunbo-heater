@@ -2,12 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { StudentEntry } from '../schema/student-entry';
-import Button from './Button';
-import { useToast } from './ToastContext';
-import { validateStudentData } from '../lib/validation';
-import type { WorkingHours } from '../schema/working-hours';
-import SuggestionModal from './SuggestionModal';
-import ConfirmModal from './ConfirmModal';
+import Button from '@/components/Button';
+import { useToast } from '@/components/ToastContext';
+import { validateStudentData } from '@/lib/validation';
+import type { WorkingHours } from '@/schema/working-hours';
+import SuggestionModal from '@/components/SuggestionModal';
+import ConfirmModal from '@/components/ConfirmModal';
 
 interface SignupFormProps {
   buttonText?: string;
@@ -395,7 +395,7 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
         confirmLabel="Clear and Suggest"
         confirmVariant="primary"
       >
-        You already have a day and time selected. To use "Suggest a Time", we need to clear your current selections. Would you like us to clear the day and time fields so we can suggest new options?
+        You already have a day and time selected. To use &quot;Suggest a Time&quot;, we need to clear your current selections. Would you like us to clear the day and time fields so we can suggest new options?
       </ConfirmModal>
     </div>
   );

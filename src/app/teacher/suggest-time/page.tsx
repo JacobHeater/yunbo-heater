@@ -133,7 +133,7 @@ export default function SuggestTime() {
                         ) : (
                             <>
                                 <p className="text-foreground/70 mb-6">
-                                    Select a specific day or "Any Day" to see available time slots that fit within your working hours and avoid conflicts with existing students.
+                                    Select a specific day or &quot;Any Day&quot; to see available time slots that fit within your working hours and avoid conflicts with existing students.
                                 </p>
 
                                 <div className="space-y-4">
