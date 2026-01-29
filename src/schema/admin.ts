@@ -26,10 +26,4 @@ export class AdminTable extends GoogleSheetsTableBase<Admin> {
       nullable: false,
     },
   };
-  readAllAsync(): Promise<Admin[]> {
-    throw new Error("Method not implemented.");
-  }
-  readOneAsync(id: string): Promise<Admin | null> {
-    throw new Error("Method not implemented.");
-  }
 }

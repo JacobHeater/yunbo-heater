@@ -27,11 +27,7 @@ export async function POST(request: NextRequest) {
       // Check if credentials match any admin account
       admin = admins.find(admin => admin.emailAddress === email && admin.password === password);
     } catch (error) {
-      console.log('Google Sheets error, falling back to test credentials:', String(error));
-      // Fallback for local/dev: accept a single test account
-      if (email === 'jacobheater@gmail.com' && password === 'test') {
-        admin = { id: 'local-test', emailAddress: email, password };
-      }
+      console.log(error);
     }
 
     console.log('Login attempt:', { email, found: !!admin });
