@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { StudentEntry } from '../schema/student-entry';
 import Button from '@/components/Button';
 import { useToast } from '@/components/ToastContext';
@@ -36,6 +36,21 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
   const [maxTime, setMaxTime] = useState('');
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  // Close tooltip when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (tooltipRef.current && !tooltipRef.current.contains(event.target as Node)) {
+        setShowTooltip(false);
+      }
+    };
+    if (showTooltip) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showTooltip]);
 
   // Fetch working hours
   useEffect(() => {
@@ -296,24 +311,43 @@ export default function SignupForm({ buttonText = "Sign Up", mode = 'signup', di
               <option value="00:45:00">45 minutes</option>
               <option value="01:00:00">60 minutes</option>
             </select>
-            <button
-              type="button"
-              onClick={() => {
-                if (!formData.duration) {
-                  showToast('Please select a lesson duration first.', 'error');
-                  return;
-                }
-                if (formData.lessonDay && formData.lessonTime) {
-                  setShowClearConfirm(true);
-                } else {
-                  setShowSuggestionModal(true);
-                }
-              }}
-              disabled={disabled}
-              className="mt-1 text-blue-600 hover:text-blue-800 text-sm underline disabled:text-gray-400 disabled:no-underline"
-            >
-              Suggest a Time
-            </button>
+            <div className="relative inline-flex items-center gap-1" ref={tooltipRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!formData.duration) {
+                    showToast('Please select a lesson duration first.', 'error');
+                    return;
+                  }
+                  if (formData.lessonDay && formData.lessonTime) {
+                    setShowClearConfirm(true);
+                  } else {
+                    setShowSuggestionModal(true);
+                  }
+                }}
+                disabled={disabled}
+                className="mt-1 text-blue-600 hover:text-blue-800 text-sm underline disabled:text-gray-400 disabled:no-underline"
+              >
+                Suggest a Time
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowTooltip(!showTooltip)}
+                onMouseEnter={() => setShowTooltip(true)}
+                onMouseLeave={() => setShowTooltip(false)}
+                className="mt-1 w-4 h-4 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-600 text-xs font-medium flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                aria-label="What does Suggest a Time do?"
+              >
+                ?
+              </button>
+              {showTooltip && (
+                <div role="tooltip" className="absolute left-0 bottom-full mb-2 w-64 p-3 bg-white text-foreground text-xs rounded-lg shadow-lg border border-foreground/10 z-50">
+                  <div className="font-medium mb-1 text-foreground">Suggest a Time</div>
+                  <p className="text-foreground/70">Not sure when to schedule? This feature analyzes the teacher&apos;s availability and suggests open time slots that work best for your chosen lesson duration.</p>
+                  <div className="absolute left-4 top-full w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-white"></div>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="min-w-0">
